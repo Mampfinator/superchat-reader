@@ -20,6 +20,7 @@ class ProgramConfig extends SavedConfig {
     [SAVE_PATH] = "mainConfig.json"
     debug = false
     logLevel = LogLevel.INFO
+    public readonly enabledProviders: Record<string, boolean> = {};
 
     override validate(): void {
         if (!Object.values(LogLevel).includes(this.logLevel.toLowerCase() as LogLevel)) {
@@ -28,3 +29,4 @@ class ProgramConfig extends SavedConfig {
         }
     }
 }
+export type ProgramConfigInterface = ProgramConfig

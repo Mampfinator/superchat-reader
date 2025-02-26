@@ -1,6 +1,7 @@
 import { DonationMessage, DonationProvider } from '@app/DonationProvider.ts';
 import { Combine } from '@app/util.ts';
 import { SAVE_PATH, SavedConfig } from '@app/SavedConfig.ts';
+import { getProgramConfig, ProgramConfigInterface } from '@app/MainConfig.ts';
 
 /**
  * Indicates that a requested provider was not registered.
@@ -16,11 +17,11 @@ export class ProviderNotFound extends Error {
  */
 export class ProviderManager {
     private readonly providers = new Map<string, DonationProvider>();
-    private config!: ProviderManagerConfig;
+    private config!: ProgramConfigInterface;
     private combine = new Combine<DonationMessage>();
 
     public async init() {
-        this.config = await SavedConfig.getOrCreate(ProviderManagerConfig);
+        this.config = await getProgramConfig();
     }
 
     public register(
@@ -30,7 +31,7 @@ export class ProviderManager {
             throw new Error(`Provider ${provider.name} (${provider.id}) already registered.`);
         }
         // if we find a new provider, assume we want it enabled by default.
-        if (!this.config.enabled[provider.id]) this.config.enabled[provider.id] = true;
+        if (!this.config.enabledProviders[provider.id]) this.config.enabledProviders[provider.id] = true;
         this.providers.set(provider.id, provider);
     }
 
@@ -84,7 +85,7 @@ export class ProviderManager {
         if (!provider) {
             throw new ProviderNotFound(id);
         }
-        this.config.enabled[id] = false;
+        this.config.enabledProviders[id] = false;
         this.combine.remove(id);
         return await provider.deactivate();
     }
@@ -110,7 +111,7 @@ export class ProviderManager {
     }
 
     public getActiveProviderIds(): string[] {
-        return Object.entries(this.config.enabled).filter(([_, isActive]) => isActive).map(([id, _]) => id);
+        return Object.entries(this.config.enabledProviders).filter(([_, isActive]) => isActive).map(([id, _]) => id);
     }
 
     /**
@@ -120,10 +121,4 @@ export class ProviderManager {
     public readAll(): Combine<DonationMessage> {
         return this.combine;
     }
-}
-
-class ProviderManagerConfig extends SavedConfig {
-    [SAVE_PATH] = 'providers.json';
-
-    public readonly enabled: Record<string, boolean> = {};
 }

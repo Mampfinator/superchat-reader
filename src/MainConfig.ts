@@ -4,29 +4,29 @@ let programConfig: ProgramConfig | undefined;
 
 export async function getProgramConfig(forceReload = false) {
     if (!programConfig || forceReload) {
-        programConfig = await SavedConfig.getOrCreate(ProgramConfig)
+        programConfig = await SavedConfig.getOrCreate(ProgramConfig);
     }
-    return programConfig
+    return programConfig;
 }
 
 enum LogLevel {
-    ERROR = "error",
-    WARN = "warn",
-    INFO = "info",
-    ALL = "all",
+    ERROR = 'error',
+    WARN = 'warn',
+    INFO = 'info',
+    ALL = 'all',
 }
 
 class ProgramConfig extends SavedConfig {
-    [SAVE_PATH] = "mainConfig.json"
-    debug = false
-    logLevel = LogLevel.INFO
+    [SAVE_PATH] = 'mainConfig.json';
+    debug = false;
+    logLevel = LogLevel.INFO;
     public readonly enabledProviders: Record<string, boolean> = {};
 
     override validate(): void {
         if (!Object.values(LogLevel).includes(this.logLevel.toLowerCase() as LogLevel)) {
-            const options = Object.values(LogLevel).join(', ')
-            throw new Error(`Program Config invalid: logLevel must be one of [${options}]`)
+            const options = Object.values(LogLevel).join(', ');
+            throw new Error(`Program Config invalid: logLevel must be one of [${options}]`);
         }
     }
 }
-export type ProgramConfigInterface = ProgramConfig
+export type ProgramConfigInterface = ProgramConfig;

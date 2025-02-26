@@ -1,6 +1,5 @@
 import { DonationMessage, DonationProvider } from '@app/DonationProvider.ts';
 import { Combine } from '@app/util.ts';
-import { SAVE_PATH, SavedConfig } from '@app/SavedConfig.ts';
 import { getProgramConfig, ProgramConfigInterface } from '@app/MainConfig.ts';
 
 /**

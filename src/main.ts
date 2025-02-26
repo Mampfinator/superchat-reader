@@ -7,7 +7,7 @@ import { getProgramConfig } from '@app/MainConfig.ts';
 await loadCCCache();
 
 const manager = new ProviderManager();
-const config = await getProgramConfig()
+const config = await getProgramConfig();
 
 await manager.init();
 

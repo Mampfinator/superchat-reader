@@ -36,7 +36,10 @@ export class DemoProvider implements DonationProvider {
     async *process() {
         while (this.active) {
             let sleptfor = 0
-            while (!this.immediateMessage && sleptfor < this.config.delay) {
+            while (
+                !this.immediateMessage && 
+                (!this.config.constantStream || sleptfor < this.config.delay)
+            ) {
                 await sleep(250);
                 sleptfor += 250
             }
@@ -110,6 +113,14 @@ export class DemoProvider implements DonationProvider {
                     }
                 }
             }
+        ).addCheckbox(
+            "Constant messages",
+            {
+                startValue: this.config.constantStream,
+                callback: (state) => {
+                    this.config.constantStream = state
+                }
+            }
         ).addSlider(
             "Message Delay (ms)",
             {
@@ -137,6 +148,7 @@ class DemoConfig extends SavedConfig {
     minWords = 5;
     maxWords = 25;
     delay = 1000;
+    constantStream = false;
 
     override validate() {
         if (this.minWords >= this.maxWords) {

@@ -17,9 +17,9 @@ export interface DonationProvider {
     configure(cb: ConfigurationBuilder): void;
 }
 
-export interface DonationMessage {
-    message: string | LocallyCachedImage;
-    messageType: 'text' | 'image';
+export type MessageType = "text" | "image";
+
+type DonationMessageBase = {
     donationAmount: number;
     donationCurrency: CurrencyCodeRecord;
     donationClass: DonationClass;
@@ -27,6 +27,18 @@ export interface DonationMessage {
     authorID?: string; // If provided by platform
     authorAvatar?: LocallyCachedImage; // reference to on-disk cache instead of storing multiple times
 }
+
+interface DonationTextMessage extends DonationMessageBase {
+    messageType: "text";
+    message: string;
+}
+
+interface DonationImageMessage extends DonationMessageBase {
+    messageType: "image";
+    message: LocallyCachedImage;
+}
+
+export type DonationMessage = DonationTextMessage | DonationImageMessage;
 
 export function donationMessageToString(dm: DonationMessage) {
     let str = `${dm.author}: ${dm.donationAmount} ${dm.donationCurrency.currency}`;

@@ -60,6 +60,61 @@ export class DemoProvider implements DonationProvider {
     }
 
     configure(cb: ConfigurationBuilder): void {
+        cb.addCheckbox(
+            "Enabled",
+            {
+                startValue: this.active,
+                callback: async (state) => {
+                    if (state && !this.active) {
+                        await this.activate()
+                    } else if (!state && this.active) {
+                        await this.deactivate()
+                    } else {
+                        console.warn(`Provider in weird state. check: ${state} state: ${this.active}`)
+                    }
+                }
+            }
+        ).addTextBox(
+            "Username",
+            {
+                startValue: this.config.demoUsername,
+                callback: (newVal) => {
+                    this.config.demoUsername = newVal
+                }
+            }
+        ).addTextBox (
+            "Minimum Words",
+            {
+                startValue: String(this.config.minWords),
+                callback: (newVal) => {
+                    const newMin = Number(newVal)
+                    if (!Number.isNaN(newMin) && newMin < this.config.maxWords && newMin > 0) {
+                        this.config.minWords = newMin
+                    }
+                }
+            }
+        ).addTextBox (
+            "Maximum Words",
+            {
+                startValue: String(this.config.maxWords),
+                callback: (newVal) => {
+                    const newMax = Number(newVal)
+                    if (!Number.isNaN(newMax) && newMax > this.config.minWords && newMax < 100) {
+                        this.config.maxWords = newMax
+                    }
+                }
+            }
+        ).addSlider(
+            "Message Delay (ms)",
+            {
+                range: [250, 10_000],
+                step: 250,
+                startValue: this.config.delay,
+                callback: (newVal) => {
+                    this.config.delay = newVal
+                }
+            }
+        )
     }
 }
 

@@ -12,6 +12,7 @@ export class DemoProvider implements DonationProvider {
 
     messages: DonationMessage[] = [];
     active = false;
+    immediateMessage = false;
 
     config!: DemoConfig;
 
@@ -34,10 +35,15 @@ export class DemoProvider implements DonationProvider {
 
     async *process() {
         while (this.active) {
-            await sleep(this.config.delay);
+            let sleptfor = 0
+            while (!this.immediateMessage && sleptfor < this.config.delay) {
+                await sleep(250);
+                sleptfor += 250
+            }
             if (!this.active) {
                 return;
             }
+            this.immediateMessage = false
             const message: DonationMessage = {
                 author: this.config.demoUsername,
                 message: generateWords(
@@ -112,6 +118,13 @@ export class DemoProvider implements DonationProvider {
                 startValue: this.config.delay,
                 callback: (newVal) => {
                     this.config.delay = newVal
+                }
+            }
+        ).addButton(
+            "Send message",
+            {
+                callback: () => {
+                    this.immediateMessage = true
                 }
             }
         )

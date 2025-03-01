@@ -36,10 +36,9 @@ export class DemoProvider implements DonationProvider {
     async *process() {
         while (this.active) {
             let sleptfor = 0
-            while (
-                !this.immediateMessage && 
-                (!this.config.constantStream || sleptfor < this.config.delay)
-            ) {
+            // Keep looping until: immediate message requested OR
+            // constant stream is enabled and we've slept long enough
+            while (!this.immediateMessage &&  (!this.config.constantStream || sleptfor < this.config.delay)) {
                 await sleep(250);
                 sleptfor += 250
             }

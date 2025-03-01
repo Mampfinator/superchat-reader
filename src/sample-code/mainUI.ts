@@ -18,29 +18,15 @@ const mainWindow = new WebUI();
 const manager = new ProviderManager();
 await manager.init();
 
-const cb = new ConfigurationBuilder()
-    .addButton('click here to boop', {
-        callback: () => {
-            console.log('BOOP');
-        },
-    })
-    .addCheckbox('check', {})
-    .addSlider('slider', {
-        callback: async (value) => {
-            await sleep(500);
-            console.log('slider value:', value);
-        },
-    })
-    .addParagraph("This is a paragraph. It's a paragraph of text. Very wow.")
-    .addTextBox('Type here!', {})
-    .addTextBox('Type your number here', { type: 'number' });
+const demoprov = new DemoProvider();
+const democonfig = new ConfigurationBuilder();
 
-mainWindowHtml = mainWindowHtml.replace('<config />', cb.render());
-cb.bind(mainWindow);
-
-manager.register(new DemoProvider());
+manager.register(demoprov);
 
 await manager.activate('demo');
+demoprov.configure(democonfig);
+mainWindowHtml = mainWindowHtml.replace('<config />', democonfig.render());
+democonfig.bind(mainWindow);
 
 mainWindow.setSize(800, 400);
 await mainWindow.show(mainWindowHtml);

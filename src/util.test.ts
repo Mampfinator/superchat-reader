@@ -2,7 +2,6 @@ import { assertEquals } from '@std/assert/equals';
 import { assert } from '@std/assert/assert';
 import { Combine, sleep } from '@app/util.ts';
 
-
 async function* generate<T>(delay: number, ...items: T[]): AsyncGenerator<T> {
     while (items.length > 0) {
         await sleep(delay);

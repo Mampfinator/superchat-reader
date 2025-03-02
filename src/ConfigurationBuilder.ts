@@ -94,7 +94,7 @@ abstract class ConfigElementBase {
      * HTML snippet that defines the rendered config element. Has keys like {label} that will be replaced
      * during the render phase.
      */
-    abstract readonly snippet: string
+    abstract readonly snippet: string;
     /** Dictionary of replacements to perform on the HTML snippet. */
     readonly replacementKeys: { [x: string]: string | number };
     readonly replacementRegex: RegExp;

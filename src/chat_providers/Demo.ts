@@ -35,17 +35,17 @@ export class DemoProvider implements DonationProvider {
 
     async *process() {
         while (this.active) {
-            let sleptfor = 0
+            let sleptfor = 0;
             // Keep looping until: immediate message requested OR
             // constant stream is enabled and we've slept long enough
-            while (!this.immediateMessage &&  (!this.config.constantStream || sleptfor < this.config.delay)) {
+            while (!this.immediateMessage && (!this.config.constantStream || sleptfor < this.config.delay)) {
                 await sleep(250);
-                sleptfor += 250
+                sleptfor += 250;
             }
             if (!this.active) {
                 return;
             }
-            this.immediateMessage = false
+            this.immediateMessage = false;
             const message: DonationMessage = {
                 author: this.config.demoUsername,
                 message: generateWords(
@@ -69,75 +69,75 @@ export class DemoProvider implements DonationProvider {
 
     configure(cb: ConfigurationBuilder): void {
         cb.addCheckbox(
-            "Enabled",
+            'Enabled',
             {
                 startValue: this.active,
                 callback: async (state) => {
                     if (state && !this.active) {
-                        await this.activate()
+                        await this.activate();
                     } else if (!state && this.active) {
-                        await this.deactivate()
+                        await this.deactivate();
                     } else {
-                        console.warn(`Provider in weird state. check: ${state} state: ${this.active}`)
+                        console.warn(`Provider in weird state. check: ${state} state: ${this.active}`);
                     }
-                }
-            }
+                },
+            },
         ).addTextBox(
-            "Username",
+            'Username',
             {
                 startValue: this.config.demoUsername,
                 callback: (newVal) => {
-                    this.config.demoUsername = newVal
-                }
-            }
-        ).addTextBox (
-            "Minimum Words",
+                    this.config.demoUsername = newVal;
+                },
+            },
+        ).addTextBox(
+            'Minimum Words',
             {
                 startValue: String(this.config.minWords),
                 callback: (newVal) => {
-                    const newMin = Number(newVal)
+                    const newMin = Number(newVal);
                     if (!Number.isNaN(newMin) && newMin < this.config.maxWords && newMin > 0) {
-                        this.config.minWords = newMin
+                        this.config.minWords = newMin;
                     }
-                }
-            }
-        ).addTextBox (
-            "Maximum Words",
+                },
+            },
+        ).addTextBox(
+            'Maximum Words',
             {
                 startValue: String(this.config.maxWords),
                 callback: (newVal) => {
-                    const newMax = Number(newVal)
+                    const newMax = Number(newVal);
                     if (!Number.isNaN(newMax) && newMax > this.config.minWords && newMax < 100) {
-                        this.config.maxWords = newMax
+                        this.config.maxWords = newMax;
                     }
-                }
-            }
+                },
+            },
         ).addCheckbox(
-            "Constant messages",
+            'Constant messages',
             {
                 startValue: this.config.constantStream,
                 callback: (state) => {
-                    this.config.constantStream = state
-                }
-            }
+                    this.config.constantStream = state;
+                },
+            },
         ).addSlider(
-            "Message Delay (ms)",
+            'Message Delay (ms)',
             {
                 range: [250, 10_000],
                 step: 250,
                 startValue: this.config.delay,
                 callback: (newVal) => {
-                    this.config.delay = newVal
-                }
-            }
+                    this.config.delay = newVal;
+                },
+            },
         ).addButton(
-            "Send message",
+            'Send message',
             {
                 callback: () => {
-                    this.immediateMessage = true
-                }
-            }
-        )
+                    this.immediateMessage = true;
+                },
+            },
+        );
     }
 }
 

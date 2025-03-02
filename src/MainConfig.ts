@@ -16,25 +16,25 @@ enum LogLevel {
     ALL = 'all',
 }
 
-const MIN_WIDTH = Symbol("MIN WIDTH")
-const MIN_HEIGHT = Symbol("MIN HEIGHT")
+const MIN_WIDTH = Symbol('MIN WIDTH');
+const MIN_HEIGHT = Symbol('MIN HEIGHT');
 class ProgramConfig extends SavedConfig {
     [SAVE_PATH] = 'mainConfig.json';
-    readonly [MIN_HEIGHT] = 400
-    readonly [MIN_WIDTH] = 600
+    readonly [MIN_HEIGHT] = 400;
+    readonly [MIN_WIDTH] = 600;
     debug = false;
     logLevel = LogLevel.INFO;
     public readonly enabledProviders: Record<string, boolean> = {};
-    sizeWidth = 800
-    sizeHeight = 400
+    sizeWidth = 800;
+    sizeHeight = 400;
 
     override validate(): void {
         // Non-critical validation failures
         if (this.sizeWidth < this[MIN_WIDTH]) {
-            this.sizeWidth = this[MIN_WIDTH]
+            this.sizeWidth = this[MIN_WIDTH];
         }
         if (this.sizeHeight < this[MIN_HEIGHT]) {
-            this.sizeHeight = this[MIN_HEIGHT]
+            this.sizeHeight = this[MIN_HEIGHT];
         }
 
         // Critical validation failures
@@ -45,8 +45,8 @@ class ProgramConfig extends SavedConfig {
     }
 
     /** Returns non-configurable minimums.*/
-    getMinimumWindowSize (): [width: number, height: number] {
-        return [this[MIN_WIDTH], this[MIN_HEIGHT]]
+    getMinimumWindowSize(): [width: number, height: number] {
+        return [this[MIN_WIDTH], this[MIN_HEIGHT]];
     }
 }
 export type ProgramConfigInterface = ProgramConfig;

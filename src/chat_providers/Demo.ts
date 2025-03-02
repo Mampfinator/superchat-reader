@@ -3,7 +3,26 @@ import { DonationClass, DonationMessage, DonationProvider } from '@app/DonationP
 import { SAVE_PATH, SavedConfig } from '@app/SavedConfig.ts';
 import { sleep } from '@app/util.ts';
 import generateWords from '@biegomar/lorem';
-import { code } from 'currency-codes';
+import { code, codes } from 'currency-codes';
+import { CC_CACHE_FILEPATH, convertCurrency, CurrencyAPIResponse } from '@app/CurrencyConversion.ts';
+
+const DONATION_THRESHOLDS = [
+    [0, DonationClass.Blue],
+    [2, DonationClass.LightBlue],
+    [5, DonationClass.Green],
+    [10, DonationClass.Yellow],
+    [20, DonationClass.Orange],
+    [50, DonationClass.Magenta],
+    [100, DonationClass.Red],
+] as const;
+
+function getRandomAmount() {
+    const tier = Math.floor(Math.random() * DONATION_THRESHOLDS.length);
+    const min = DONATION_THRESHOLDS[tier][0];
+    const max = DONATION_THRESHOLDS[tier + 1]?.[0] ?? 500;
+
+    return [Math.random() * (max - min) + min, DONATION_THRESHOLDS[tier][1]] as const;
+}
 
 export class DemoProvider implements DonationProvider {
     readonly id = 'demo';
@@ -38,22 +57,32 @@ export class DemoProvider implements DonationProvider {
             if (!this.active) {
                 return;
             }
+
+            const currencyCache = JSON.parse(await Deno.readTextFile(CC_CACHE_FILEPATH)) as CurrencyAPIResponse;
+            const cacheCodes = new Set(Object.keys(currencyCache.rates));
+            const currencyCodes = new Set(codes());
+            const validCodes = [...currencyCodes.intersection(cacheCodes)];
+
+            let [donationAmount, donationClass] = getRandomAmount();
+            const donationCurrencyCode = validCodes[Math.floor(Math.random() * validCodes.length)]!;
+            const donationCurrency = code(donationCurrencyCode)!;
+            const fromUsd = convertCurrency(donationAmount, code('USD')!, donationCurrency);
+
+            donationAmount *= fromUsd;
+            donationAmount *= 10 ** donationCurrency.digits;
+            donationAmount = Math.floor(donationAmount);
+            donationAmount /= 10 ** donationCurrency.digits;
+
             const message: DonationMessage = {
                 author: this.config.demoUsername,
                 message: generateWords(
                     this.config.minWords + Math.floor(Math.random() * (this.config.maxWords - this.config.minWords)),
                 ),
-                donationClass: DonationClass.Blue,
-                donationCurrency: code('USD')!, // USD currency exists, this will never be undefined
-                donationAmount: 0,
+                donationClass,
+                donationCurrency,
+                donationAmount,
                 messageType: 'text',
             };
-
-            // Generate a random amount and truncate it to the correct digit count
-            message.donationAmount = Math.random() * 100 *
-                10 ** message.donationCurrency.digits;
-            message.donationAmount = Math.floor(message.donationAmount);
-            message.donationAmount /= 10 ** message.donationCurrency.digits;
 
             yield message;
         }

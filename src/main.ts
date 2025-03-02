@@ -19,7 +19,7 @@ if (!isProduction) {
 
 await manager.activateAll();
 
-const messageCap = 4;
+const messageCap = 10;
 
 console.log(`Printing ${messageCap} total debug messages.`);
 
@@ -29,5 +29,9 @@ let i = 0;
 for await (const message of manager.readAll()) {
     if (i++ > messageCap) break;
     if (message.messageType !== 'text') continue;
-    console.log(`${message.author}: ${message.message}`);
+    console.log(
+        `${message.author} (${message.donationCurrency.code} ${
+            message.donationAmount.toFixed(message.donationCurrency.digits)
+        } | ${message.donationClass}): ${message.message}`,
+    );
 }

@@ -21,41 +21,50 @@ Deno.test({
         assertThrows(() => Deno.lstatSync(CCC.CC_CACHE_FILEPATH));
         const nativeFetch = fetch;
         let trueResponse: Response | null = null;
-        let lastStatus: number = 0;
+        let spoofResponseCode = 0;
 
         // Shim fetch with our own that returns fake failures
         globalThis['fetch'] = async (input: URL | RequestInfo, init?: RequestInit & { client?: Deno.HttpClient }) => {
-            let resp: Response;
             if (!trueResponse) {
                 trueResponse = await nativeFetch(input, init);
                 if (trueResponse.status != 200) {
                     throw new Error(`Actual API returned a non-OK code: ${trueResponse.statusText}`);
                 }
-                resp = new Response(trueResponse.body, { status: 429 });
-                console.log('spoofing response 429');
-            } else if (lastStatus == 429) {
-                resp = new Response(trueResponse.body, { status: 418 });
-                console.log('spoofing response 418');
-            } else {
-                resp = trueResponse;
-                console.log('Giving true response');
             }
-            lastStatus = resp.status;
-            return resp;
+            if (spoofResponseCode != 0) {
+                return new Response(trueResponse.body, { status: spoofResponseCode });
+            } else {
+                return trueResponse;
+            }
         };
 
-        await context.step('API failure: too many requests', async () => {
-            await assertRejects(CCC.loadCCCache);
+        spoofResponseCode = 429; // Too many requests
+        await context.step({
+            name: 'API failure: too many requests',
+            fn: async () => {
+                await assertRejects(CCC.loadCCCache);
+            },
         });
 
-        await context.step('API failure: General', async () => {
-            await assertRejects(CCC.loadCCCache);
+        spoofResponseCode = 418; // I'm a teapot
+        await context.step({
+            name: 'API failure: General',
+            fn: async () => {
+                await assertRejects(CCC.loadCCCache);
+            },
         });
 
-        await context.step('Cache downloads correctly', CCC.loadCCCache);
+        spoofResponseCode = 0; // Restore to zero if otherwise set
+        await context.step({
+            name: 'Cache downloads correctly',
+            fn: CCC.loadCCCache,
+        });
 
         const faketime = new FakeTime('4000-01-01');
-        await context.step('Cache is out of date', CCC.loadCCCache);
+        await context.step({
+            name: 'Cache is out of date',
+            fn: CCC.loadCCCache,
+        });
         faketime.restore();
 
         // Reset fetch to default

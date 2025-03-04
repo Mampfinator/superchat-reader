@@ -83,7 +83,7 @@ Deno.test({
         globalThis['fetch'] = nativeFetch;
         trueResponse!.body?.cancel();
     },
-    ignore: !Deno.env.has('REMOVE_CACHE') && false,
+    ignore: !Deno.env.has('REMOVE_CACHE'),
 });
 
 Deno.test(TEST_PREFIX + 'Intersection of npm:currency-codes and api codes', () => {

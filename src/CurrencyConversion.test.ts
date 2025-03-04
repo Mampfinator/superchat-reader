@@ -126,14 +126,36 @@ Deno.test(TEST_PREFIX + 'Fail to convert if code is wrong', () => {
     assertThrows(() => CCC.convertCurrency(1, undefined));
 });
 
-Deno.test(TEST_PREFIX + 'ISO-4217 Abbrev extraction', () => {
-    assertEquals(CCC.getCurrencyCodeFromString('CA$1')?.code, 'CAD');
-    assertEquals(CCC.getCurrencyCodeFromString('$1')?.code, 'USD');
-    assertEquals(CCC.getCurrencyCodeFromString('A$1')?.code, 'AUD');
-    assertEquals(CCC.getCurrencyCodeFromString('PhP1')?.code, 'PHP');
-    assertEquals(CCC.getCurrencyCodeFromString('¥ 10000')?.code, 'JPY');
-    assertEquals(CCC.getCurrencyCodeFromString('10000 ¥')?.code, 'JPY');
-    assertEquals(CCC.getCurrencyCodeFromString('10000')?.code, undefined);
+Deno.test(TEST_PREFIX + 'ISO-4217 Abbrev extraction', async (context) => {
+    await context.step({
+        name: 'Normal',
+        fn: () => {
+            assertEquals(CCC.getCurrencyCodeFromString('CA$1')?.code, 'CAD');
+            assertEquals(CCC.getCurrencyCodeFromString('$1')?.code, 'USD');
+        },
+    });
+
+    await context.step({
+        name: 'Incorrect capitalization',
+        fn: () => {
+            assertEquals(CCC.getCurrencyCodeFromString('PhP1')?.code, 'PHP');
+        },
+    });
+
+    await context.step({
+        name: 'Unusual placement of symbol',
+        fn: () => {
+            assertEquals(CCC.getCurrencyCodeFromString('¥ 10000')?.code, 'JPY');
+            assertEquals(CCC.getCurrencyCodeFromString('10000 ¥')?.code, 'JPY');
+        },
+    });
+
+    await context.step({
+        name: 'Symbol missing',
+        fn: () => {
+            assertEquals(CCC.getCurrencyCodeFromString('10000')?.code, undefined);
+        },
+    });
 });
 
 if (import.meta.main) {

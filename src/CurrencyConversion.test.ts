@@ -1,6 +1,7 @@
 import * as CCC from '@app/CurrencyConversion.ts';
 import { assert, assertEquals, assertGreater, assertRejects, assertThrows } from '@std/assert';
 import { code, codes } from 'currency-codes';
+import { FakeTime } from '@std/testing/time';
 const TEST_PREFIX = 'CCC: ';
 
 Deno.test(TEST_PREFIX + 'Fail to operate when not loaded', () => {
@@ -52,6 +53,10 @@ Deno.test({
         });
 
         await context.step('Cache downloads correctly', CCC.loadCCCache);
+
+        const faketime = new FakeTime('4000-01-01');
+        await context.step('Cache is out of date', CCC.loadCCCache);
+        faketime.restore();
 
         // Reset fetch to default
         globalThis['fetch'] = nativeFetch;

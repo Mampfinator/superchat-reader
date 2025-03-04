@@ -8,6 +8,7 @@
         "@std/crypto": "jsr:@std/crypto@^1.0.4",
         "@std/fs": "jsr:@std/fs@^1.0.11",
         "@std/path": "jsr:@std/path@^1.0.8",
+        "@std/testing": "jsr:@std/testing@^1.0.9",
         "react": "npm:react@^19.0.0",
         "youtube.js": "npm:@sireatsalot/youtube.js@^0.0.4"
     },

@@ -86,7 +86,11 @@ Deno.test({
     ignore: !Deno.env.has('REMOVE_CACHE'),
 });
 
-Deno.test(TEST_PREFIX + 'Intersection of npm:currency-codes and api codes', () => {
+Deno.test(TEST_PREFIX + 'Intersection of npm:currency-codes and api codes', async () => {
+    if (!CCC.isLoaded()) {
+        await CCC.loadCCCache();
+    }
+
     const codes1 = new Set(codes());
     const codes2 = new Set(Object.keys(JSON.parse(Deno.readTextFileSync(CCC.CC_CACHE_FILEPATH)).rates));
     const intersection = CCC.getValidCodes();

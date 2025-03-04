@@ -108,6 +108,7 @@ Deno.test(TEST_PREFIX + 'Conversions', async (context) => {
     if (!CCC.isLoaded()) {
         await CCC.loadCCCache();
     }
+    // TODO : Mock Deno.readTextFile to poison this with known values instead of relying on whatever the cache says?
 
     await context.step({
         name: 'Big number to small: JPY -> USD',
@@ -135,6 +136,15 @@ Deno.test(TEST_PREFIX + 'Conversions', async (context) => {
             const invalidCode = [...(codes1.difference(codes2))][0];
             assertThrows(() => CCC.convertCurrency(1, code(invalidCode)));
             assertThrows(() => CCC.convertCurrency(1, undefined));
+        },
+    });
+
+    await context.step({
+        name: 'conversion correctly truncated',
+        fn: () => {
+            // This should always return a conversion that has enough sub-digits to be truncated.
+            const amount = CCC.convertCurrency(0.1, code('USD'), code('JPY'));
+            assertEquals(amount, Math.floor(amount));
         },
     });
 });

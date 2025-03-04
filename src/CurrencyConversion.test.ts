@@ -100,30 +100,39 @@ Deno.test(TEST_PREFIX + 'Intersection of npm:currency-codes and api codes', () =
     }
 });
 
-Deno.test(TEST_PREFIX + 'Conversion, big number to small: JPY -> USD', async () => {
+Deno.test(TEST_PREFIX + 'Conversions', async (context) => {
     if (!CCC.isLoaded()) {
         await CCC.loadCCCache();
     }
-    const startAmount = 100;
-    const finalAmount = CCC.convertCurrency(startAmount, code('JPY'), code('USD'));
-    assertGreater(startAmount, finalAmount);
-});
 
-Deno.test(TEST_PREFIX + 'Conversion, small number to big: USD -> SEK', async () => {
-    if (!CCC.isLoaded()) {
-        await CCC.loadCCCache();
-    }
-    const startAmount = 1;
-    const finalAmount = CCC.convertCurrency(startAmount, code('USD'), code('SEK'));
-    assertGreater(finalAmount, startAmount);
-});
+    await context.step({
+        name: 'Big number to small: JPY -> USD',
+        fn: () => {
+            const startAmount = 100;
+            const finalAmount = CCC.convertCurrency(startAmount, code('JPY'), code('USD'));
+            assertGreater(startAmount, finalAmount);
+        },
+    });
 
-Deno.test(TEST_PREFIX + 'Fail to convert if code is wrong', () => {
-    const codes1 = new Set(codes());
-    const codes2 = new Set(Object.keys(JSON.parse(Deno.readTextFileSync(CCC.CC_CACHE_FILEPATH)).rates));
-    const invalidCode = [...(codes1.difference(codes2))][0];
-    assertThrows(() => CCC.convertCurrency(1, code(invalidCode)));
-    assertThrows(() => CCC.convertCurrency(1, undefined));
+    await context.step({
+        name: 'Small number to big: USD -> SEK',
+        fn: () => {
+            const startAmount = 1;
+            const finalAmount = CCC.convertCurrency(startAmount, code('USD'), code('SEK'));
+            assertGreater(finalAmount, startAmount);
+        },
+    });
+
+    await context.step({
+        name: 'Fail if code is wrong',
+        fn: () => {
+            const codes1 = new Set(codes());
+            const codes2 = new Set(Object.keys(JSON.parse(Deno.readTextFileSync(CCC.CC_CACHE_FILEPATH)).rates));
+            const invalidCode = [...(codes1.difference(codes2))][0];
+            assertThrows(() => CCC.convertCurrency(1, code(invalidCode)));
+            assertThrows(() => CCC.convertCurrency(1, undefined));
+        },
+    });
 });
 
 Deno.test(TEST_PREFIX + 'ISO-4217 Abbrev extraction', async (context) => {

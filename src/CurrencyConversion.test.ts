@@ -81,7 +81,6 @@ Deno.test({
 
         // Reset fetch to default
         globalThis['fetch'] = nativeFetch;
-        console.log('fetch reset to default');
         trueResponse!.body?.cancel();
     },
     ignore: !Deno.env.has('REMOVE_CACHE') && false,

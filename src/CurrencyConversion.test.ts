@@ -57,15 +57,21 @@ Deno.test({
         spoofResponseCode = 0; // Restore to zero if otherwise set
         await context.step({
             name: 'Cache downloads correctly',
-            fn: CCC.loadCCCache,
+            fn: () => CCC.loadCCCache(),
         });
 
         const faketime = new FakeTime('4000-01-01');
         await context.step({
             name: 'Cache is out of date',
-            fn: CCC.loadCCCache,
+            fn: () => CCC.loadCCCache(),
         });
         faketime.restore();
+
+        // This forces a reload from disk, which at this point will be the same as a normal reload
+        await context.step({
+            name: 'Normal loading',
+            fn: () => CCC.loadCCCache(true),
+        });
 
         // Reset fetch to default
         globalThis['fetch'] = nativeFetch;

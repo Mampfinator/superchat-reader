@@ -76,10 +76,11 @@ async function updateCache() {
 /**
  * Loads the currency conversion cache from disk if available. If not, loads it from the API.
  * If the cache is out of date, updates it.
+ * @param [forceRefresh=false] Force a reload from disk, even if cache is already loaded
  */
-export async function loadCCCache() {
+export async function loadCCCache(forceRefresh = false) {
     // If not loaded, load cache. If not already saved to disk, update the cache (save for the first time)
-    if (!isLoaded()) {
+    if (!isLoaded() || forceRefresh) {
         if (!await isAvailable()) await updateCache();
         console.log('Rates By Exchange Rate API: https://www.exchangerate-api.com');
         ccCache = JSON.parse(await Deno.readTextFile(CC_CACHE_FILEPATH));

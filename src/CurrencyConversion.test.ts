@@ -57,7 +57,10 @@ Deno.test({
         spoofResponseCode = 0; // Restore to zero if otherwise set
         await context.step({
             name: 'Cache downloads correctly',
-            fn: () => CCC.loadCCCache(),
+            fn: () => {
+                CCC.loadCCCache();
+                Deno.lstatSync(CCC.CC_CACHE_FILEPATH);
+            },
         });
 
         const faketime = new FakeTime('4000-01-01');
@@ -70,14 +73,15 @@ Deno.test({
         // This forces a reload from disk, which at this point will be the same as a normal reload
         await context.step({
             name: 'Normal loading',
-            fn: () => CCC.loadCCCache(true),
+            fn: () => {
+                CCC.loadCCCache(true);
+                assert(CCC.isLoaded());
+            },
         });
 
         // Reset fetch to default
         globalThis['fetch'] = nativeFetch;
         console.log('fetch reset to default');
-        Deno.lstatSync(CCC.CC_CACHE_FILEPATH);
-        assertEquals(CCC.isLoaded(), true);
         trueResponse!.body?.cancel();
     },
     ignore: !Deno.env.has('REMOVE_CACHE') && false,

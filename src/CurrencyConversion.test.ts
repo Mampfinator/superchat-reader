@@ -8,8 +8,9 @@ Deno.test(TEST_PREFIX + 'Fail to operate when not loaded', () => {
 });
 
 Deno.test({
-    name: TEST_PREFIX + 'load cache + download on missing',
-    fn: async () => {
+    name: TEST_PREFIX + 'load cache',
+    fn: async (context) => {
+        // Setup
         try {
             Deno.removeSync(CCC.CC_CACHE_FILEPATH);
         } catch {
@@ -41,9 +42,16 @@ Deno.test({
             lastStatus = resp.status;
             return resp;
         };
-        await assertRejects(CCC.loadCCCache); // 429 failure
-        await assertRejects(CCC.loadCCCache); // General fetch failure
-        await CCC.loadCCCache();
+
+        await context.step('API failure: too many requests', async () => {
+            await assertRejects(CCC.loadCCCache);
+        });
+
+        await context.step('API failure: General', async () => {
+            await assertRejects(CCC.loadCCCache);
+        });
+
+        await context.step('Cache downloads correctly', CCC.loadCCCache);
 
         // Reset fetch to default
         globalThis['fetch'] = nativeFetch;

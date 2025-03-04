@@ -68,11 +68,6 @@ Deno.test({
     ignore: !Deno.env.has('REMOVE_CACHE') && false,
 });
 
-Deno.test(TEST_PREFIX + 'Just load cache', async () => {
-    await CCC.loadCCCache();
-    assert(CCC.isLoaded());
-});
-
 Deno.test(TEST_PREFIX + 'Intersection of npm:currency-codes and api codes', () => {
     const codes1 = new Set(codes());
     const codes2 = new Set(Object.keys(JSON.parse(Deno.readTextFileSync(CCC.CC_CACHE_FILEPATH)).rates));

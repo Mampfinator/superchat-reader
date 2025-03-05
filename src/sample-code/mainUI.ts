@@ -4,6 +4,7 @@ import { ProviderManager } from '@app/ProviderManager.ts';
 import { DemoProvider } from '@app/chat_providers/Demo.ts';
 import { LocallyCachedImage } from '@app/ImageCache.ts';
 import { ConfigurationBuilder } from '@app/ConfigurationBuilder.ts';
+import { sleep } from '@app/util.ts';
 
 
 let mainWindowHtml = await (await UISnippets.load('index.html')).text()
@@ -23,9 +24,12 @@ const cb = new ConfigurationBuilder()
         callback: () => { console.log('BOOP'); }
     })
     .addCheckbox('check', {})
-    .addSlider('slider', {})
+    .addSlider('slider', { callback: async (value) => {
+        await sleep(500);
+        console.log('slider value:', value);
+    }})
     .addTextBox('Type here!', {})
-    .addNumberBox('Type your number here', {});
+    .addTextBox('Type your number here', { type: "number" });
 
 mainWindowHtml = mainWindowHtml.replace("<config />", cb.render())
 cb.bind(mainWindow)

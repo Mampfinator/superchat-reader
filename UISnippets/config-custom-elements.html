@@ -63,11 +63,13 @@
             preLabel.innerText = this.getAttribute("label") ?? "NO LABEL"
             
             // Slider setup
+            const {min, max, step, startValue} = getMultipleAttributes(this, "min", "max", "step", "startValue")
+            console.log({min, max, step, startValue})
             slider.type = "range"
-            slider.min = this.getAttribute("min")
-            slider.max = this.getAttribute("max")
-            slider.step = this.getAttribute("step")
-            slider.value = this.getAttribute("value")
+            slider.min = min
+            slider.max = max
+            slider.step = step
+            slider.setAttribute("value", startValue)
             slider.oninput = () => {
                 valLabel.innerText = slider.value
                 globalThis[`slider_${uuid}`](slider.value)
@@ -86,8 +88,9 @@
 
     class ConfigBuilderCheckbox extends HTMLElement {
         connectedCallback() {
-            const uuid = this.getAttribute("uuid")
+            const {uuid, value} = getMultipleAttributes(this, "uuid", "value")
             const text = this.getAttribute("label")
+            console.log({uuid, text, value})
             if (!uuid) {
                 throw new Error("Custom checkbox must have a UUID")
             }
@@ -105,6 +108,7 @@
             // Set up checkbox
             checkbox.type = "checkbox"
             checkbox.id = uuid
+            checkbox.checked = value == "true"
             checkbox.oninput = () => {
                 globalThis[`checked_${uuid}`](checkbox.checked)
             }
@@ -135,7 +139,7 @@
 
             const input = document.createElement("input");
             input.id = uuid;
-            input.value = value;
+            input.setAttribute("value", value);
             input.placeholder = placeholder;
             input.type = type;
 

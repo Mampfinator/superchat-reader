@@ -1,10 +1,12 @@
 import { crypto } from '@std/crypto/crypto';
 import UISnippets from '@app/UISnippets/dir.ts';
 import { WebUI } from 'https://deno.land/x/webui@2.5.3/mod.ts';
-import { z as zod } from 'zod';
+import { z as zod, ZodError } from 'zod';
 
 // #region Main builder
 export class ConfigurationBuilder {
+    private valid = true;
+    private issues: zod.ZodIssue[] = [];
     // deno-lint-ignore no-explicit-any
     private elements: ConfigElementBase<any>[] = [];
 
@@ -14,7 +16,20 @@ export class ConfigurationBuilder {
      * @param callback A function to be called when the value changes
      */
     addCheckbox(label: string, options: zod.input<typeof ConfigCheckboxOptions>): this {
-        this.elements.push(new ConfigCheckbox(label, options));
+        try {
+            this.elements.push(new ConfigCheckbox(label, options));
+        } catch (e) {
+            if (e instanceof ZodError) {
+                for (const issue of e.issues) {
+                    console.warn(`${e.name} [${issue.code}]: ${issue.message}`);
+                    this.issues.push(issue);
+                }
+                console.warn(`Could not add checkbox [${label}]`);
+                this.valid = false;
+            } else {
+                throw e;
+            }
+        }
         return this;
     }
 
@@ -26,7 +41,20 @@ export class ConfigurationBuilder {
      * @param callback The function to call when the value changes
      */
     addSlider(label: string, options: ConfigSliderOptions): this {
-        this.elements.push(new ConfigSlider(label, options));
+        try {
+            this.elements.push(new ConfigSlider(label, options));
+        } catch (e) {
+            if (e instanceof ZodError) {
+                for (const issue of e.issues) {
+                    console.warn(`${e.name} [${issue.code}]: ${issue.message}`);
+                    this.issues.push(issue);
+                }
+                console.warn(`Could not add slider [${label}]`);
+                this.valid = false;
+            } else {
+                throw e;
+            }
+        }
         return this;
     }
 
@@ -39,7 +67,20 @@ export class ConfigurationBuilder {
      * @param validate The function to call when the value changes, to validate the new value
      */
     addTextBox(label: string, options: ConfigTextBoxOptions): this {
-        this.elements.push(new ConfigTextBox(label, options));
+        try {
+            this.elements.push(new ConfigTextBox(label, options));
+        } catch (e) {
+            if (e instanceof ZodError) {
+                for (const issue of e.issues) {
+                    console.warn(`${e.name} [${issue.code}]: ${issue.message}`);
+                    this.issues.push(issue);
+                }
+                console.warn(`Could not add text/number box [${label}]`);
+                this.valid = false;
+            } else {
+                throw e;
+            }
+        }
         return this;
     }
 
@@ -49,7 +90,20 @@ export class ConfigurationBuilder {
      * @param callback The function to call when the button is clicked
      */
     addButton(label: string, options: ConfigButtonOptions): this {
-        this.elements.push(new ConfigButton(label, options));
+        try {
+            this.elements.push(new ConfigButton(label, options));
+        } catch (e) {
+            if (e instanceof ZodError) {
+                for (const issue of e.issues) {
+                    console.warn(`${e.name} [${issue.code}]: ${issue.message}`);
+                    this.issues.push(issue);
+                }
+                console.warn(`Could not add button [${label}]`);
+                this.valid = false;
+            } else {
+                throw e;
+            }
+        }
         return this;
     }
 
@@ -58,6 +112,9 @@ export class ConfigurationBuilder {
      * @returns An HTML string for rendering
      */
     render(): string {
+        if (!this.valid) {
+            throw new Deno.errors.InvalidData('Built configuration not valid. Refusing to render.');
+        }
         let content = '<div>';
         for (const elem of this.elements) {
             const { tagName, attr } = elem.build();

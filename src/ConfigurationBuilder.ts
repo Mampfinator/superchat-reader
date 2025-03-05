@@ -106,10 +106,9 @@ abstract class ConfigElementBase<Schema extends zod.Schema> {
 
 // #region Checkbox element
 const ConfigCheckboxOptions = zod.object({
-    value: zod.boolean().optional(),
+    value: zod.boolean().optional().default(false),
     callback: zod.function()
         .args(zod.boolean())
-        .returns(zod.void())
         .optional()
         .default(() => console.log),
 });
@@ -142,10 +141,9 @@ class ConfigCheckbox extends ConfigElementBase<typeof ConfigCheckboxOptions> {
 
 // #region Slider element
 const ConfigSliderOptions = zod.object({
-    value: zod.number(),
+    value: zod.number().optional().default(0),
     callback: zod.function()
         .args(zod.number())
-        .returns(zod.void())
         .default(() => console.log),
     range: zod.tuple([zod.number().nonnegative(), zod.number().nonnegative()]).default([0, 10]).superRefine(
         ([min, max], ctx) => {
@@ -158,7 +156,25 @@ const ConfigSliderOptions = zod.object({
             }
         },
     ),
-    step: zod.number().nonnegative(),
+    step: zod.number().nonnegative().optional().default(1),
+}).superRefine(({ range, value}, ctx ) => {
+    if (value < range[0]) {
+        ctx.addIssue({
+            code: 'too_small',
+            message: 'value must be within range',
+            inclusive: true,
+            minimum: range[0],
+            type: "number",
+        });
+    } else if (value > range[1]) {
+        ctx.addIssue({
+            code: 'too_big',
+            message: 'value must be within range',
+            inclusive: true,
+            maximum: range[1],
+            type: "number",
+        });
+    }
 });
 
 type ConfigSliderOptions = zod.input<typeof ConfigSliderOptions>;
@@ -196,11 +212,10 @@ class ConfigSlider extends ConfigElementBase<typeof ConfigSliderOptions> {
 const ConfigTextBoxOptions = zod.union([
     zod.object({
         placeholder: zod.string().optional(),
-        type: zod.literal('text'),
+        type: zod.literal('text').optional().default('text'),
         value: zod.string().optional(),
         callback: zod.function()
             .args(zod.string())
-            .returns(zod.void())
             .optional()
             .default(() => console.log),
     }),
@@ -210,7 +225,6 @@ const ConfigTextBoxOptions = zod.union([
         value: zod.number().optional(),
         callback: zod.function()
             .args(zod.number())
-            .returns(zod.void())
             .optional()
             .default(() => console.log),
     }),
@@ -251,7 +265,7 @@ class ConfigTextBox extends ConfigElementBase<typeof ConfigTextBoxOptions> {
 // #region Button element
 const ConfigButtonOptions = zod.object({
     callback: zod
-        .function().returns(zod.void())
+        .function()
         .optional()
         .default(() => () => console.log('Boop')),
 });
@@ -274,7 +288,7 @@ class ConfigButton extends ConfigElementBase<typeof ConfigButtonOptions> {
     }
 
     bind(wui: WebUI): void {
-        wui.bind(this.callbackIdentifier, this.options.callback);
+        wui.bind(this.callbackIdentifier, () => { this.options.callback(); });
     }
 }
 // #endregion

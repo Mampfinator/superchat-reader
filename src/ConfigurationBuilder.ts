@@ -146,34 +146,32 @@ const ConfigSliderOptions = zod.object({
     callback: zod.function()
         .args(zod.number())
         .default(() => console.log),
-    range: zod.tuple([zod.number().nonnegative(), zod.number().nonnegative()]).default([0, 10]).superRefine(
-        ([min, max], ctx) => {
-            if (min >= max) {
-                ctx.addIssue({
-                    code: 'custom',
-                    message: 'min must be smaller than max',
-                    fatal: true,
-                });
-            }
-        },
-    ),
+    range: zod.tuple([zod.number().nonnegative(), zod.number().nonnegative()]).default([0, 10]),
     step: zod.number().nonnegative().optional().default(1),
-}).superRefine(({ range, value}, ctx ) => {
-    if (value < range[0]) {
+}).superRefine(({ range, value }, ctx) => {
+    const [rangeMin, rangeMax] = range;
+    if (rangeMin >= rangeMax) {
+        ctx.addIssue({
+            code: 'custom',
+            message: 'range min must be smaller than max',
+            fatal: true,
+        });
+    }
+    if (value < rangeMin) {
         ctx.addIssue({
             code: 'too_small',
             message: 'value must be within range',
             inclusive: true,
-            minimum: range[0],
-            type: "number",
+            minimum: rangeMin,
+            type: 'number',
         });
-    } else if (value > range[1]) {
+    } else if (value > rangeMax) {
         ctx.addIssue({
             code: 'too_big',
             message: 'value must be within range',
             inclusive: true,
-            maximum: range[1],
-            type: "number",
+            maximum: rangeMax,
+            type: 'number',
         });
     }
 });

@@ -6,13 +6,12 @@ import { LocallyCachedImage } from '@app/ImageCache.ts';
 import { ConfigurationBuilder } from '@app/ConfigurationBuilder.ts';
 import { sleep } from '@app/util.ts';
 
+let mainWindowHtml = await (await UISnippets.load('index.html')).text();
+const mainWindowCss = await (await UISnippets.load('index.css')).text();
+const builderScript = await (await UISnippets.load('config-custom-elements.html')).text();
 
-let mainWindowHtml = await (await UISnippets.load('index.html')).text()
-const mainWindowCss = await (await UISnippets.load('index.css')).text()
-const builderScript = await (await UISnippets.load('config-custom-elements.html')).text()
-
-mainWindowHtml = mainWindowHtml.replace(/\s*css-builtin {.*?}/, mainWindowCss)
-mainWindowHtml = mainWindowHtml.replace(/<script-config-builder \/>/, builderScript)
+mainWindowHtml = mainWindowHtml.replace(/\s*css-builtin {.*?}/, mainWindowCss);
+mainWindowHtml = mainWindowHtml.replace(/<script-config-builder \/>/, builderScript);
 
 const mainWindow = new WebUI();
 
@@ -21,29 +20,33 @@ await manager.init();
 
 const cb = new ConfigurationBuilder()
     .addButton('click here to boop', {
-        callback: () => { console.log('BOOP'); }
+        callback: () => {
+            console.log('BOOP');
+        },
     })
     .addCheckbox('check', {})
-    .addSlider('slider', { callback: async (value) => {
-        await sleep(500);
-        console.log('slider value:', value);
-    }})
+    .addSlider('slider', {
+        callback: async (value) => {
+            await sleep(500);
+            console.log('slider value:', value);
+        },
+    })
     .addTextBox('Type here!', {})
-    .addTextBox('Type your number here', { type: "number" });
+    .addTextBox('Type your number here', { type: 'number' });
 
-mainWindowHtml = mainWindowHtml.replace("<config />", cb.render())
-cb.bind(mainWindow)
+mainWindowHtml = mainWindowHtml.replace('<config />', cb.render());
+cb.bind(mainWindow);
 
 manager.register(new DemoProvider());
 
-await manager.activate("demo");
+await manager.activate('demo');
 
-mainWindow.setSize(800, 400)
+mainWindow.setSize(800, 400);
 await mainWindow.show(mainWindowHtml);
 
 for await (const message of manager.readAll()) {
     if (!mainWindow.isShown) break;
-    if (message.messageType === "text") {
+    if (message.messageType === 'text') {
         await mainWindow.script(`
             const container = document.querySelector("#message-container"); 
             container.innerHTML += \`<donation-text-message 
@@ -67,4 +70,4 @@ for await (const message of manager.readAll()) {
     }
 }
 
-await WebUI.wait()
+await WebUI.wait();

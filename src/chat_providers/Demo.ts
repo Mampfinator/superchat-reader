@@ -71,7 +71,7 @@ export class DemoProvider implements DonationProvider {
         cb.addCheckbox(
             'Enabled',
             {
-                startValue: this.active,
+                value: this.active,
                 callback: async (state) => {
                     if (state && !this.active) {
                         await this.activate();
@@ -85,7 +85,8 @@ export class DemoProvider implements DonationProvider {
         ).addTextBox(
             'Username',
             {
-                startValue: this.config.demoUsername,
+                value: this.config.demoUsername,
+                type: 'text',
                 callback: (newVal) => {
                     this.config.demoUsername = newVal;
                 },
@@ -93,7 +94,8 @@ export class DemoProvider implements DonationProvider {
         ).addTextBox(
             'Minimum Words',
             {
-                startValue: String(this.config.minWords),
+                value: this.config.minWords,
+                type: 'number',
                 callback: (newVal) => {
                     const newMin = Number(newVal);
                     if (!Number.isNaN(newMin) && newMin < this.config.maxWords && newMin > 0) {
@@ -104,7 +106,8 @@ export class DemoProvider implements DonationProvider {
         ).addTextBox(
             'Maximum Words',
             {
-                startValue: String(this.config.maxWords),
+                value: this.config.maxWords,
+                type: 'number',
                 callback: (newVal) => {
                     const newMax = Number(newVal);
                     if (!Number.isNaN(newMax) && newMax > this.config.minWords && newMax < 100) {
@@ -115,7 +118,7 @@ export class DemoProvider implements DonationProvider {
         ).addCheckbox(
             'Constant messages',
             {
-                startValue: this.config.constantStream,
+                value: this.config.constantStream,
                 callback: (state) => {
                     this.config.constantStream = state;
                 },
@@ -125,7 +128,7 @@ export class DemoProvider implements DonationProvider {
             {
                 range: [250, 10_000],
                 step: 250,
-                startValue: this.config.delay,
+                value: this.config.delay,
                 callback: (newVal) => {
                     this.config.delay = newVal;
                 },

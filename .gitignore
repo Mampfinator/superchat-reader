@@ -1,8 +1,16 @@
+# Plumbing folders
 .vscode/
-dist/
 node_modules/
-types/
-filecache/
-config/
 x/
+
+# Development folders
+coverage/
+dist/
+types/
+
+# tool-generated output
 src/UISnippets/
+
+# program-generated
+config/
+filecache/

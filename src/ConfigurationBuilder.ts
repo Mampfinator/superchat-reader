@@ -1,5 +1,4 @@
 import { crypto } from '@std/crypto/crypto';
-import UISnippets from '@app/UISnippets/dir.ts';
 import { WebUI } from 'https://deno.land/x/webui@2.5.3/mod.ts';
 import { z as zod, ZodError } from 'zod';
 import { Constructor } from '@app/util.ts';
@@ -349,6 +348,7 @@ class ConfigButton extends ConfigElementBase<typeof ConfigButtonOptions> {
 }
 // #endregion
 
+// #region  Paragraph element
 const ConfigParagraphOptions = zod.string();
 type ConfigParagraphOptions = zod.input<typeof ConfigParagraphOptions>;
 
@@ -372,3 +372,4 @@ class ConfigPragraph extends ConfigElementBase<typeof ConfigParagraphOptions> {
         return;
     }
 }
+// #endregion

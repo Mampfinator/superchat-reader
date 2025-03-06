@@ -2,6 +2,7 @@ import { crypto } from '@std/crypto/crypto';
 import UISnippets from '@app/UISnippets/dir.ts';
 import { WebUI } from 'https://deno.land/x/webui@2.5.3/mod.ts';
 import { z as zod, ZodError } from 'zod';
+import { Constructor } from '@app/util.ts';
 
 // #region Main builder
 export class ConfigurationBuilder {
@@ -16,21 +17,7 @@ export class ConfigurationBuilder {
      * @param callback A function to be called when the value changes
      */
     addCheckbox(label: string, options: zod.input<typeof ConfigCheckboxOptions>): this {
-        try {
-            this.elements.push(new ConfigCheckbox(label, options));
-        } catch (e) {
-            if (e instanceof ZodError) {
-                for (const issue of e.issues) {
-                    console.warn(`${e.name} [${issue.code}]: ${issue.message}`);
-                    this.issues.push(issue);
-                }
-                console.warn(`Could not add checkbox [${label}]`);
-                this.valid = false;
-            } else {
-                throw e;
-            }
-        }
-        return this;
+        return this.addElement(ConfigCheckbox, label, options);
     }
 
     /**
@@ -41,21 +28,7 @@ export class ConfigurationBuilder {
      * @param callback The function to call when the value changes
      */
     addSlider(label: string, options: ConfigSliderOptions): this {
-        try {
-            this.elements.push(new ConfigSlider(label, options));
-        } catch (e) {
-            if (e instanceof ZodError) {
-                for (const issue of e.issues) {
-                    console.warn(`${e.name} [${issue.code}]: ${issue.message}`);
-                    this.issues.push(issue);
-                }
-                console.warn(`Could not add slider [${label}]`);
-                this.valid = false;
-            } else {
-                throw e;
-            }
-        }
-        return this;
+        return this.addElement(ConfigSlider, label, options);
     }
 
     /**
@@ -67,21 +40,7 @@ export class ConfigurationBuilder {
      * @param validate The function to call when the value changes, to validate the new value
      */
     addTextBox(label: string, options: ConfigTextBoxOptions): this {
-        try {
-            this.elements.push(new ConfigTextBox(label, options));
-        } catch (e) {
-            if (e instanceof ZodError) {
-                for (const issue of e.issues) {
-                    console.warn(`${e.name} [${issue.code}]: ${issue.message}`);
-                    this.issues.push(issue);
-                }
-                console.warn(`Could not add text/number box [${label}]`);
-                this.valid = false;
-            } else {
-                throw e;
-            }
-        }
-        return this;
+        return this.addElement(ConfigTextBox, label, options);
     }
 
     /**
@@ -90,21 +49,33 @@ export class ConfigurationBuilder {
      * @param callback The function to call when the button is clicked
      */
     addButton(label: string, options: ConfigButtonOptions): this {
+        return this.addElement(ConfigButton, label, options);
+    }
+    private addElement<
+        T extends ConfigElementBase<zod.Schema>,
+        C extends Constructor<T>,
+        P extends ConstructorParameters<C>,
+    >(constructor: C, ...parameters: P): this {
         try {
-            this.elements.push(new ConfigButton(label, options));
+            this.elements.push(new constructor(...parameters));
         } catch (e) {
-            if (e instanceof ZodError) {
-                for (const issue of e.issues) {
-                    console.warn(`${e.name} [${issue.code}]: ${issue.message}`);
-                    this.issues.push(issue);
-                }
-                console.warn(`Could not add button [${label}]`);
-                this.valid = false;
-            } else {
-                throw e;
-            }
+            this.invalidate(constructor, e);
         }
         return this;
+    }
+
+    // deno-lint-ignore ban-types no-explicit-any
+    private invalidate(constructor: Function, error: any) {
+        if (!(error instanceof ZodError)) {
+            throw error;
+        }
+
+        for (const issue of error.issues) {
+            console.warn(`${error.name} [${issue.code}]: ${issue.message}`);
+            this.issues.push(issue);
+        }
+        console.warn(`Could not add ${constructor.name}.`);
+        this.valid = false;
     }
 
     /**

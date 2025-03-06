@@ -2,6 +2,9 @@ export const sleep = (ms: number): Promise<void> => {
     return new Promise((res) => setTimeout(res, ms));
 };
 
+// deno-lint-ignore no-explicit-any
+export type Constructor<T> = new (...args: any[]) => T;
+
 /**
  * Combines multiple async iterables into one, while also allowing you to remove or add iterables during use.
  * When any iterable is exhausted, it is automatically removed. When there are no more iterables to process. the iterator ends.

@@ -88,12 +88,7 @@ export class ConfigurationBuilder {
         }
         let content = '<div>';
         for (const elem of this.elements) {
-            const { tagName, attr } = elem.build();
-            let tagStr = `<${tagName} `;
-            for (const [name, value] of Object.entries(attr)) {
-                tagStr += `${name}="${value}" `;
-            }
-            tagStr += `></${tagName}>`;
+            const tagStr = renderElementDescriptor(elem.build());
             content += tagStr;
         }
         content += '</div>';
@@ -109,7 +104,34 @@ export class ConfigurationBuilder {
 }
 // #endregion
 
-type BuildReturnType = { tagName: string; attr: Record<string, string | number | boolean> };
+type ElementDescriptor = {
+    tagName: string;
+    attr: Record<string, string | number | boolean>;
+    content?: string | ElementDescriptor | ElementDescriptor[];
+};
+
+function renderElementDescriptor(descriptor: ElementDescriptor): string {
+    const { tagName, attr, content } = descriptor;
+    let tagStr = `<${tagName} `;
+    for (const [name, value] of Object.entries(attr)) {
+        tagStr += `${name}="${value}" `;
+    }
+    tagStr += '>';
+    if (content) {
+        if (typeof content === 'string') {
+            tagStr += content;
+        } else if (Array.isArray(content)) {
+            for (const elem of content) {
+                tagStr += renderElementDescriptor(elem);
+            }
+        } else {
+            tagStr += renderElementDescriptor(content);
+        }
+    }
+    tagStr += `</${tagName}>`;
+    return tagStr;
+}
+
 /** Items that all elements in the configuration panel share */
 abstract class ConfigElementBase<Schema extends zod.Schema> {
     /** Unique ID to assign to webUI bindings */
@@ -128,7 +150,7 @@ abstract class ConfigElementBase<Schema extends zod.Schema> {
     }
 
     /** Render the element to tag metadata */
-    abstract build(): BuildReturnType;
+    abstract build(): ElementDescriptor;
     abstract bind(wui: WebUI): void;
 }
 
@@ -148,7 +170,7 @@ class ConfigCheckbox extends ConfigElementBase<typeof ConfigCheckboxOptions> {
         super(label, ConfigCheckboxOptions, options);
     }
 
-    build(): BuildReturnType {
+    build(): ElementDescriptor {
         return {
             tagName: 'config-checkbox',
             attr: {
@@ -212,7 +234,7 @@ class ConfigSlider extends ConfigElementBase<typeof ConfigSliderOptions> {
         super(label, ConfigSliderOptions, options);
     }
 
-    build(): BuildReturnType {
+    build(): ElementDescriptor {
         return {
             tagName: 'config-slider',
             attr: {
@@ -264,7 +286,7 @@ class ConfigTextBox extends ConfigElementBase<typeof ConfigTextBoxOptions> {
         super(label, ConfigTextBoxOptions, options);
     }
 
-    build(): BuildReturnType {
+    build(): ElementDescriptor {
         return {
             tagName: 'config-textbox',
             attr: {

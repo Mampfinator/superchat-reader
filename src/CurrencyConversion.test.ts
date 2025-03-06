@@ -2,6 +2,7 @@ import * as CCC from '@app/CurrencyConversion.ts';
 import { assert, assertEquals, assertGreater, assertRejects, assertThrows } from '@std/assert';
 import { code, codes } from 'currency-codes';
 import { FakeTime } from '@std/testing/time';
+import { CurrencyAPIResponse } from '@app/CurrencyConversion.ts';
 const TEST_PREFIX = 'CCC: ';
 
 Deno.test(TEST_PREFIX + 'Fail to operate when not loaded', () => {
@@ -105,9 +106,22 @@ Deno.test(TEST_PREFIX + 'Intersection of npm:currency-codes and api codes', asyn
 });
 
 Deno.test(TEST_PREFIX + 'Conversions', async (context) => {
-    if (!CCC.isLoaded()) {
-        await CCC.loadCCCache();
-    }
+    // Mock Deno.readTextFile to return static, known data. This way we don't rely on actual economies to test our functions.
+    // unmock the function immediately after using it, but save reloading the cache for once the test is complete.
+    const trueLoadFile = Deno.readTextFile;
+    Deno.readTextFile = (..._args: unknown[]) => {
+        return Promise.resolve(JSON.stringify({
+            time_next_update_unix: new Date('4000-01-01').valueOf(),
+            rates: {
+                // frozen in time as of 2025-03-06
+                JPY: 149.571615,
+                SEK: 10.64617,
+                USD: 1,
+            },
+        } as Partial<CurrencyAPIResponse>));
+    };
+    await CCC.loadCCCache(true);
+    Deno.readTextFile = trueLoadFile;
     // TODO : Mock Deno.readTextFile to poison this with known values instead of relying on whatever the cache says?
 
     await context.step({
@@ -147,6 +161,9 @@ Deno.test(TEST_PREFIX + 'Conversions', async (context) => {
             assertEquals(amount, Math.floor(amount));
         },
     });
+
+    // Test done, reload non-poisoned data
+    await CCC.loadCCCache(true);
 });
 
 Deno.test(TEST_PREFIX + 'ISO-4217 Abbrev extraction', async (context) => {

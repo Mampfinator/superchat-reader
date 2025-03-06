@@ -51,6 +51,11 @@ export class ConfigurationBuilder {
     addButton(label: string, options: ConfigButtonOptions): this {
         return this.addElement(ConfigButton, label, options);
     }
+
+    addParagraph(content: zod.input<typeof ConfigParagraphOptions>): this {
+        return this.addElement(ConfigPragraph, content);
+    }
+
     private addElement<
         T extends ConfigElementBase<zod.Schema>,
         C extends Constructor<T>,
@@ -337,7 +342,33 @@ class ConfigButton extends ConfigElementBase<typeof ConfigButtonOptions> {
     }
 
     bind(wui: WebUI): void {
-        wui.bind(this.callbackIdentifier, () => { this.options.callback(); });
+        wui.bind(this.callbackIdentifier, () => {
+            this.options.callback();
+        });
     }
 }
 // #endregion
+
+const ConfigParagraphOptions = zod.string();
+type ConfigParagraphOptions = zod.input<typeof ConfigParagraphOptions>;
+
+/** Static paragraph element for displaying information */
+class ConfigPragraph extends ConfigElementBase<typeof ConfigParagraphOptions> {
+    constructor(options: ConfigParagraphOptions) {
+        super('', ConfigParagraphOptions, options);
+    }
+
+    build(): ElementDescriptor {
+        return {
+            tagName: 'p',
+            attr: {
+                class: 'config-text',
+            },
+            content: this.options,
+        };
+    }
+
+    bind(_: WebUI): void {
+        return;
+    }
+}

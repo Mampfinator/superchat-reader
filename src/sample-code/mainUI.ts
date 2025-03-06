@@ -31,6 +31,7 @@ const cb = new ConfigurationBuilder()
             console.log('slider value:', value);
         },
     })
+    .addParagraph("This is a paragraph. It's a paragraph of text. Very wow.")
     .addTextBox('Type here!', {})
     .addTextBox('Type your number here', { type: 'number' });
 

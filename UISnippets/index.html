@@ -2,11 +2,17 @@
 <html>
     <head>
         <script src="webui.js"></script>
-        <style>
-            css-builtin {display: none;}
-            css-user {display: none;}
-        </style>
+        <link rel="stylesheet" href="index.css">
         <title>Superchat Reader</title>
+        <style id="config-button">
+            :host button {
+                height: 3em;
+                width: 90%;
+                margin: 0.5em;
+                margin-left: 5%;
+                margin-right: 5%;
+            }
+        </style>
     </head>
     <body>
         <div id="titlebar">
@@ -26,7 +32,7 @@
                         <p>Demo</p>
                     </div>
                     <div id="plugin-config">
-                        <config />
+                        
                     </div>
                 </div>
             </div>
@@ -34,7 +40,7 @@
                 <div id="message-container">
             </div>
         </div>
-        <script-config-builder />
+        <script defer src="config-custom-elements.js"></script>
         <script>
             function selectTab(button) {
                 const id = button.getAttribute("data-tab-select");

@@ -1,0 +1,335 @@
+/**
+    * @param { HTMLElement } element
+    * @param { string[] } attributes
+    * @returns { Record<string, string | null> }
+    */
+function getMultipleAttributes(element, ...attributes) {
+    const out = {};
+    for (const attribute of attributes) {
+        out[attribute] = element.getAttribute(attribute)
+    }
+    return out;
+}
+
+class ConfigBuilderButton extends HTMLElement {
+    connectedCallback() {
+        const {uuid, label} = getMultipleAttributes(this, "uuid", "label")
+        const shadow = this.attachShadow({mode: "closed"})
+        const button = document.createElement("button")
+        const style = new CSSStyleSheet()
+        for (const rule of document.getElementById("config-button").sheet.cssRules) {
+            style.insertRule(rule.cssText)
+        }
+
+        button.innerText = label
+        button.setAttribute("id", uuid)
+        button.onclick = globalThis[uuid]
+
+        shadow.adoptedStyleSheets = [style]
+        shadow.appendChild(button)
+    }
+}
+
+class ConfigBuilderSlider extends HTMLElement{
+    connectedCallback() {
+        const uuid = this.getAttribute("uuid")
+        if (!uuid) {
+            throw new Error("Custom slider must have a UUID")
+        }
+        const preLabel = document.createElement("label")
+        const slider = document.createElement("input")
+        const valLabel = document.createElement("label")
+        const shadow = this.attachShadow({mode:"closed"})
+
+        // Set this to a block element
+        this.style.display = "block"
+
+        // Text label setup
+        preLabel.setAttribute("for", uuid)
+        preLabel.innerText = this.getAttribute("label") ?? "NO LABEL"
+        
+        // Slider setup
+        const {min, max, step, startValue} = getMultipleAttributes(this, "min", "max", "step", "startValue")
+        console.log({min, max, step, startValue})
+        slider.type = "range"
+        slider.min = min
+        slider.max = max
+        slider.step = step
+        slider.setAttribute("value", startValue)
+        slider.oninput = () => {
+            valLabel.innerText = slider.value
+            globalThis[`slider_${uuid}`](slider.value)
+        }
+        
+        // Value label setup
+        valLabel.setAttribute("for", uuid)
+        valLabel.innerText = slider.value
+
+        // Add child nodes
+        shadow.appendChild(preLabel)
+        shadow.appendChild(slider)
+        shadow.appendChild(valLabel)
+    }
+}
+
+class ConfigBuilderCheckbox extends HTMLElement {
+    connectedCallback() {
+        const {uuid, value} = getMultipleAttributes(this, "uuid", "value")
+        const text = this.getAttribute("label")
+        console.log({uuid, text, value})
+        if (!uuid) {
+            throw new Error("Custom checkbox must have a UUID")
+        }
+        const label = document.createElement("label")
+        const checkbox = document.createElement("input")
+        const shadow = this.attachShadow({mode: "closed"})
+
+        // Set this to a block element
+        this.style.display = "block"
+
+        // Set up label
+        label.setAttribute("for", uuid)
+        label.innerText = text
+        
+        // Set up checkbox
+        checkbox.type = "checkbox"
+        checkbox.id = uuid
+        checkbox.checked = value == "true"
+        checkbox.oninput = () => {
+            globalThis[`checked_${uuid}`](checkbox.checked)
+        }
+
+        // Add child nodes
+        shadow.appendChild(label)
+        shadow.appendChild(checkbox)
+    }
+}
+
+class ConfigBuilderTextbox extends HTMLElement {
+    connectedCallback() {
+        const {
+            uuid, label, value, placeholder, type
+        } = getMultipleAttributes(this, "uuid", "label", "value", "placeholder", "type");
+
+        if (!uuid) {
+            throw new Error("Custom textbox must have a UUID")
+        }
+        const shadow = this.attachShadow({mode: "closed"})
+
+        const labelElement = document.createElement("label");
+        labelElement.htmlFor = uuid;
+        labelElement.innerText = label;
+        shadow.appendChild(labelElement);
+
+        shadow.appendChild(document.createElement("br"));
+
+        const input = document.createElement("input");
+        input.id = uuid;
+        input.setAttribute("value", value);
+        input.placeholder = placeholder;
+        input.type = type;
+
+        shadow.appendChild(input);
+
+        let timeout;
+        const submit = () => {
+            const value = shadow.querySelector("input").value;
+            webui.call(`textbox_${uuid}`, value);
+        };
+
+        // we don't want to spam the backend with potential save-triggers
+        // so we wait for after the user has stopped typing for a while to actually send the current value.
+        this.addEventListener("input", ev => {
+            clearTimeout(timeout);
+            timeout = setTimeout(submit, 250);
+        });
+
+        // if the user instead hits enter (to signal they're done), we manually submit immediately and
+        // clear our timeout.
+        this.addEventListener("keydown", ev => {
+            if (ev.key === "Enter") {
+                clearTimeout(timeout);
+                submit();
+            }
+        });
+
+        shadow.innerHTML += `
+        <style>
+            :host {
+                display: block;
+            }
+        </style>
+        `
+    }
+}
+
+const DONATION_THRESHOLDS = [
+    [0, "#1565C0", "#FFFFFF"],
+    [2, "#00E5FF", "#000000"],
+    [5, "#0F9D58", "#000000"],
+    [10, "#FFCA28", "#000000"],
+    [20, "#F57C00", "#FFFFFF"],
+    [50, "#E91E63", "#FFFFFF"],
+    [100, "#E62117", "#FFFFFF"]
+];
+
+function getDonationColors(amount) {
+    let ret;
+    for (const [min, ...newRet] of DONATION_THRESHOLDS) {
+        if (amount >= min) {
+            ret = newRet;
+        } else {
+            return ret;
+        }
+    }
+
+    return color;
+}
+
+function createDonationHeader(authorName, avatarUri, currency, amount) {
+    const header = document.createElement("div");
+
+    const avatar = document.createElement("img");
+    avatar.src = avatarUri;
+    avatar.style = "max-height: 1rem";
+
+    const author = document.createElement("p");
+    author.textContent = authorName;
+
+    const authorContainer = document.createElement("div");
+    authorContainer.appendChild(avatar);
+    authorContainer.appendChild(author);
+    header.appendChild(authorContainer);
+
+    const donationContainer = document.createElement("div");
+    donationContainer.textContent = `${currency}${amount.toFixed(2)}`;
+    header.appendChild(donationContainer);
+
+    return header;
+}
+
+class DonationTextMessage extends HTMLElement {
+    connectedCallback() {
+        this.attachShadow({ mode: "open" });
+        
+        const shadow = this.shadowRoot;
+
+        const {
+            author: authorName,
+            avatarUri,
+            currency,
+            amount: amountString
+        } = getMultipleAttributes(this, "author", "avatarUri", "currency", "amount");
+
+        const amount = Number(amountString);
+
+        const [backgroundColor, textColor] = getDonationColors(amount);
+    
+        const header = createDonationHeader(authorName, avatarUri, currency, amount);
+        shadow.appendChild(header);
+
+        const messageContainer = document.createElement("div");
+        messageContainer.appendChild(document.createElement("slot"));
+        messageContainer.id = "message-container";
+
+        shadow.appendChild(messageContainer);
+
+        shadow.innerHTML += `
+        <style>
+            div {
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+                justify-content: space-evenly;
+            }
+            #message-container {
+                padding: 10px;
+            }
+            :host {
+                color: ${textColor};
+                background-color: ${backgroundColor};
+                display: flex;
+                flex-direction: column;
+                border: 1px solid gray;
+                border-radius: 10px;
+                flex-grow: unset;
+            }
+        </style>
+        `
+    }
+}
+
+class DonationImageMessage extends HTMLElement {
+    connectedCallback() {
+        this.attachShadow({ mode: "open" });
+
+        const shadow = this.shadowRoot;
+
+        const {
+            author: authorName,
+            avatarUri,
+            currency,
+            amount: amountString,
+            image: imageUri,
+        } = getMultipleAttributes(this, "author", "avatarUri", "currency", "amount", "image");
+
+        const amount = Number(amountString);
+
+        const [backgroundColor, textColor] = getDonationColors(amount);
+    
+        const header = createDonationHeader(authorName, avatarUri, currency, amount);
+        shadow.appendChild(header);
+
+        const messageContainer = document.createElement("div");
+        const image = document.createElement("img");
+        image.src = imageUri;
+        // TODO: figure out a better max height
+        image.style = "max-height: 200px";
+        messageContainer.appendChild(image);
+
+        shadow.appendChild(messageContainer);
+
+        shadow.innerHTML += `
+        <style>
+            div {
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+                justify-content: space-evenly;
+            }
+            #message-container {
+                padding: 10px;
+            }
+            :host {
+                color: ${textColor};
+                background-color: ${backgroundColor};
+                display: flex;
+                flex-direction: column;
+                border: 1px solid gray;
+                border-radius: 10px;
+                flex-grow: unset;
+            }
+        </style>
+        `
+    }
+}
+
+// This loop waits till the webUI bridge is connected before setting up the custom tags. This lets information
+// be passed back and forth between the program and interface.
+// First waits 250ms, then checks in loops of 10ms (timing took somewhere just below 300ms in testing)
+function waitForWebUI() {
+    try {
+        if (!webui?.isConnected()) {
+            throw new Error()
+        }
+        globalThis.customElements.define("config-button", ConfigBuilderButton)
+        globalThis.customElements.define("config-slider", ConfigBuilderSlider)
+        globalThis.customElements.define("config-checkbox", ConfigBuilderCheckbox)
+        customElements.define("config-textbox", ConfigBuilderTextbox);
+        customElements.define("donation-text-message", DonationTextMessage);
+        customElements.define("donation-image-message", DonationImageMessage);
+    } catch {
+        setTimeout(waitForWebUI, 10)
+    }
+}
+setTimeout(waitForWebUI, 250)

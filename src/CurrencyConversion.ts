@@ -90,7 +90,7 @@ function isOutOfDate(): boolean {
 /** Checks if the cache file is present. */
 async function isAvailable(): Promise<boolean> {
     try {
-        JSON.parse(await Deno.readTextFile(CC_CACHE_FILEPATH));
+        await Deno.lstat(CC_CACHE_FILEPATH);
         return true;
     } catch {
         return false;
@@ -113,7 +113,6 @@ async function updateCache() {
         create: true,
         write: true,
     });
-    file.truncate();
     await resp.body!.pipeTo(file.writable);
 }
 

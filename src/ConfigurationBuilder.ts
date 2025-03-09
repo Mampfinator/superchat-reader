@@ -13,7 +13,7 @@ export class ConfigurationBuilder {
     /**
      * Adds a checkbox to the configuration panel.
      * @param label The text to display next to the checkbox
-     * @param callback A function to be called when the value changes
+     * @returns `this` (for chaining)
      */
     addCheckbox(label: string, options: zod.input<typeof ConfigCheckboxOptions>): this {
         return this.addElement(ConfigCheckbox, label, options);
@@ -22,9 +22,7 @@ export class ConfigurationBuilder {
     /**
      * Add a slider with min and max values to the configuration panel
      * @param label The text to display next to the slider
-     * @param min Minimum value
-     * @param max Maximum value
-     * @param callback The function to call when the value changes
+     * @returns `this` (for chaining)
      */
     addSlider(label: string, options: ConfigSliderOptions): this {
         return this.addElement(ConfigSlider, label, options);
@@ -32,11 +30,8 @@ export class ConfigurationBuilder {
 
     /**
      * Add a textboxt to the configuration panel, where the user can input any text
-     * TODO: Probably make validate just a regex
      * @param label The text to display next to the textbox
-     * @param defaultVal The default value of the textbox
-     * @param callback The function to call when the value changes, after validation
-     * @param validate The function to call when the value changes, to validate the new value
+     * @returns `this` (for chaining)
      */
     addTextBox(label: string, options: ConfigTextBoxOptions): this {
         return this.addElement(ConfigTextBox, label, options);
@@ -45,16 +40,27 @@ export class ConfigurationBuilder {
     /**
      * Add a clickable button to the configuration panel
      * @param label The text to display on the button
-     * @param callback The function to call when the button is clicked
+     * @returns `this` (for chaining)
      */
     addButton(label: string, options: ConfigButtonOptions): this {
         return this.addElement(ConfigButton, label, options);
     }
 
+    /**
+     * Add a static paragraph of text to the configuration panel.
+     * @param content Any valid HTML string
+     * @returns `this` (for chaining)
+     */
     addParagraph(content: zod.input<typeof ConfigParagraphOptions>): this {
         return this.addElement(ConfigPragraph, content);
     }
 
+    /**
+     * Add an arbitrary element to the builder. Internal only.
+     * @param constructor Relevant element constructor function
+     * @param parameters Constructor parameters
+     * @returns `this` (for chaining)
+     */
     private addElement<
         T extends ConfigElementBase<zod.Schema>,
         C extends Constructor<T>,
@@ -86,6 +92,7 @@ export class ConfigurationBuilder {
      * Build the configuration panel for display
      * @returns An HTML string for rendering
      */
+    // TODO: Make this render an error instead of throwing
     render(): string {
         if (!this.valid) {
             throw new Deno.errors.InvalidData('Built configuration not valid. Refusing to render.');

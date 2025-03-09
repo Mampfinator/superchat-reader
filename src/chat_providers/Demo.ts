@@ -12,6 +12,7 @@ export class DemoProvider implements DonationProvider {
 
     messages: DonationMessage[] = [];
     active = false;
+    immediateMessage = false;
 
     config!: DemoConfig;
 
@@ -34,10 +35,17 @@ export class DemoProvider implements DonationProvider {
 
     async *process() {
         while (this.active) {
-            await sleep(this.config.delay);
+            let sleptfor = 0;
+            // Keep looping until: immediate message requested OR
+            // constant stream is enabled and we've slept long enough
+            while (!this.immediateMessage && (!this.config.constantStream || sleptfor < this.config.delay)) {
+                await sleep(250);
+                sleptfor += 250;
+            }
             if (!this.active) {
                 return;
             }
+            this.immediateMessage = false;
             const message: DonationMessage = {
                 author: this.config.demoUsername,
                 message: generateWords(
@@ -60,6 +68,79 @@ export class DemoProvider implements DonationProvider {
     }
 
     configure(cb: ConfigurationBuilder): void {
+        cb.addCheckbox(
+            'Enabled',
+            {
+                value: this.active,
+                callback: async (state) => {
+                    if (state && !this.active) {
+                        await this.activate();
+                    } else if (!state && this.active) {
+                        await this.deactivate();
+                    } else {
+                        console.warn(`Provider in weird state. check: ${state} state: ${this.active}`);
+                    }
+                },
+            },
+        ).addTextBox(
+            'Username',
+            {
+                value: this.config.demoUsername,
+                type: 'text',
+                callback: (newVal) => {
+                    this.config.demoUsername = newVal;
+                },
+            },
+        ).addTextBox(
+            'Minimum Words',
+            {
+                value: this.config.minWords,
+                type: 'number',
+                callback: (newVal) => {
+                    const newMin = Number(newVal);
+                    if (!Number.isNaN(newMin) && newMin < this.config.maxWords && newMin > 0) {
+                        this.config.minWords = newMin;
+                    }
+                },
+            },
+        ).addTextBox(
+            'Maximum Words',
+            {
+                value: this.config.maxWords,
+                type: 'number',
+                callback: (newVal) => {
+                    const newMax = Number(newVal);
+                    if (!Number.isNaN(newMax) && newMax > this.config.minWords && newMax < 100) {
+                        this.config.maxWords = newMax;
+                    }
+                },
+            },
+        ).addCheckbox(
+            'Constant messages',
+            {
+                value: this.config.constantStream,
+                callback: (state) => {
+                    this.config.constantStream = state;
+                },
+            },
+        ).addSlider(
+            'Message Delay (ms)',
+            {
+                range: [250, 10_000],
+                step: 250,
+                value: this.config.delay,
+                callback: (newVal) => {
+                    this.config.delay = newVal;
+                },
+            },
+        ).addButton(
+            'Send message',
+            {
+                callback: () => {
+                    this.immediateMessage = true;
+                },
+            },
+        );
     }
 }
 
@@ -69,6 +150,7 @@ class DemoConfig extends SavedConfig {
     minWords = 5;
     maxWords = 25;
     delay = 1000;
+    constantStream = false;
 
     override validate() {
         if (this.minWords >= this.maxWords) {

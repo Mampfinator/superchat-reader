@@ -258,7 +258,7 @@ class ConfigSlider extends ConfigElementBase<typeof ConfigSliderOptions> {
                 min: this.options.range[0],
                 max: this.options.range[1],
                 step: this.options.step,
-                startValue: this.options.value,
+                value: this.options.value,
             },
         };
     }

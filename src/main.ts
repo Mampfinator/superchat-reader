@@ -2,16 +2,16 @@ import { DemoProvider } from '@app/chat_providers/Demo.ts';
 import { YouTubeDonationProvider } from '@app/chat_providers/YouTube.ts';
 import { ProviderManager } from '@app/ProviderManager.ts';
 import { loadCCCache } from '@app/CurrencyConversion.ts';
+import { getProgramConfig } from '@app/MainConfig.ts';
 
 await loadCCCache();
 
 const manager = new ProviderManager();
+const config = await getProgramConfig();
 
 await manager.init();
 
-const isProduction = Deno.env.get('NODE_ENV') === 'production';
-
-if (!isProduction) {
+if (config.debug) {
     manager.register(new DemoProvider());
 } else {
     manager.register(new YouTubeDonationProvider());

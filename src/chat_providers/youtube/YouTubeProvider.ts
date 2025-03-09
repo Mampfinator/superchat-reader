@@ -8,6 +8,16 @@ import { code } from 'currency-codes';
 import { getCurrencyCodeFromString } from '@app/CurrencyConversion.ts';
 import { DenoOrchestrator } from '@app/chat_providers/youtube/DenoOrchestrator.ts';
 
+const CLASS_LOOKUP = {
+    4280191205: DonationClass.Blue,
+    4278248959: DonationClass.Light_Blue,
+    4280150454: DonationClass.Green,
+    4294953512: DonationClass.Yellow,
+    4294278144: DonationClass.Orange,
+    4290910299: DonationClass.Magenta,
+    4293271831: DonationClass.Red1,
+} as Record<number, DonationClass>;
+
 export class YouTubeDonationProvider implements DonationProvider {
     id = 'youtube';
     name = 'YouTube';
@@ -96,8 +106,7 @@ export class YouTubeDonationProvider implements DonationProvider {
                     donationMessage.donationCurrency = currencyCode;
                 }
 
-                // temporarily set to blue while we figure out details of `DonationClass`
-                donationMessage.donationClass = DonationClass.Blue;
+                donationMessage.donationClass = CLASS_LOOKUP[message.backgroundColor];
                 break;
             }
             case MessageType.SuperSticker: {
@@ -115,9 +124,7 @@ export class YouTubeDonationProvider implements DonationProvider {
         return donationMessage as DonationMessage;
     }
 
-    configure(cb: ConfigurationBuilder): void {
-        cb.addTextBox('streamId', 'Stream ID', (value) => this.config.streamId = value);
-    }
+    configure(cb: ConfigurationBuilder): void {}
 }
 
 export class YouTubeConfig extends SavedConfig {

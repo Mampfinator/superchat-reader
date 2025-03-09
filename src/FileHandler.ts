@@ -2,8 +2,38 @@ interface Route<P extends string> {
     name: string;
     matcher: RegExp;
     fn: Callback<P>;
-    specificity: number;
+    specificity: RouteSpecificity;
     groups?: PathVariables<P>;
+}
+
+interface RouteSpecificity {
+    /** Number of URL path fragments. Higher: more specific */
+    segments: number;
+    /** Number of capturing fragments. Lower: more specific */
+    captures: number;
+    /**
+     * Whether the route allows partial matching. Lower: more specific.
+     * @example 1: // /path/to will also match /path/to/file
+     * @example 0: // /path/to only matches /path/to
+     * @example -1: // Only used in comparison.
+     */
+    partiallyMatches: number;
+}
+
+function compareSpecificity(a: RouteSpecificity, b: RouteSpecificity) {
+    const comparison = {
+        segments: b.segments - a.segments,
+        captures: a.captures - b.captures,
+        partiallyMatches: a.partiallyMatches - b.partiallyMatches,
+    } as RouteSpecificity;
+
+    if (comparison.segments != 0) {
+        return comparison.segments;
+    } else if (comparison.captures != 0) {
+        return comparison.captures;
+    } else {
+        return comparison.partiallyMatches;
+    }
 }
 
 type Awaitable<T> = T | Promise<T>;
@@ -13,6 +43,7 @@ type Callback<P extends string> = (variables: PathVariables<P>, path: string) =>
 const multipleSlash = /\/+/g;
 const trailingSlash = /(?<=[^])\/$/;
 const captureGroup = /\/:([^/]+)/g;
+const segmentCounter = /\/[^/]+/g;
 
 export class Router {
     private routes: Route<string>[] = [];
@@ -24,15 +55,20 @@ export class Router {
             .replace(trailingSlash, '');
     }
 
-    add<P extends string>(path: P, fn: Callback<P>) {
+    add<P extends string>(path: P, fn: Callback<P>, partialMatch = false) {
         const name = this.sanitize(path);
-        const r = '^' + name
-            .replaceAll(captureGroup, '/(?<$1>[^/]+)');
-        const specificity = name.matchAll(multipleSlash).toArray().length;
+        const trailer = partialMatch ? '' : '$';
+        const nameWithGroups = name.replaceAll(captureGroup, '/(?<$1>[^/]+)');
+        const matcher = new RegExp(`^${nameWithGroups}${trailer}`);
+        const specificity = {
+            segments: name.matchAll(segmentCounter).toArray().length,
+            captures: name.matchAll(captureGroup).toArray().length,
+            partiallyMatches: partialMatch ? 1 : 0,
+        } as RouteSpecificity;
 
         this.routes.push({
             name,
-            matcher: new RegExp(r),
+            matcher,
             specificity,
             fn,
         } as unknown as Route<string>);
@@ -41,13 +77,12 @@ export class Router {
 
     async route(path: string): Promise<Response | undefined> {
         const name = this.sanitize(path);
-        const matchingRoutes = this.routes
+        const route = this.routes
             .filter((v) => {
                 return v.matcher.test(name);
             })
-            .sort((a, b) => b.specificity - a.specificity);
+            .sort((a, b) => compareSpecificity(a.specificity, b.specificity))[0];
 
-        const route = matchingRoutes[0];
         if (route) {
             const groups = name.match(route.matcher)?.groups;
             return await route.fn(groups ?? {}, path);

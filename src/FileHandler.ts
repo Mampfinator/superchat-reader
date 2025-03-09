@@ -70,6 +70,13 @@ export class Router {
             partiallyMatches: partialMatch ? 1 : 0,
         } as RouteSpecificity;
 
+        const collisions = this.routes
+            .filter(({ name: routeName }) => matcher.test(routeName))
+            .filter(({ specificity: b }) => 0 == compareSpecificity(specificity, b));
+        if (this.routes.length > 0 && collisions.length > 0) {
+            throw new Error(`Cannot add route [${name}]: it would collide with ${collisions[0].name}`);
+        }
+
         this.routes.push({
             name,
             matcher,

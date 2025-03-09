@@ -38,7 +38,11 @@ function compareSpecificity(a: RouteSpecificity, b: RouteSpecificity) {
 
 type Awaitable<T> = T | Promise<T>;
 
-type Callback<P extends string> = (variables: PathVariables<P>, path: string) => Awaitable<Response | undefined>;
+type Callback<P extends string> = (
+    variables: PathVariables<P>,
+    path: string,
+    remainder: string,
+) => Awaitable<Response | undefined>;
 
 const multipleSlash = /\/+/g;
 const trailingSlash = /(?<=[^])\/$/;
@@ -85,7 +89,8 @@ export class Router {
 
         if (route) {
             const groups = name.match(route.matcher)?.groups;
-            return await route.fn(groups ?? {}, path);
+            const remainder = name.replace(route.matcher, '');
+            return await route.fn(groups ?? {}, path, remainder);
         }
     }
 }

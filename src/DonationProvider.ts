@@ -17,16 +17,28 @@ export interface DonationProvider {
     configure(cb: ConfigurationBuilder): void;
 }
 
-export interface DonationMessage {
-    message: string | LocallyCachedImage;
-    messageType: 'text' | 'image';
+export type MessageType = 'text' | 'image';
+
+type DonationMessageBase = {
     donationAmount: number;
     donationCurrency: CurrencyCodeRecord;
     donationClass: DonationClass;
     author: string; // Visible username
     authorID?: string; // If provided by platform
     authorAvatar?: LocallyCachedImage; // reference to on-disk cache instead of storing multiple times
+};
+
+interface DonationTextMessage extends DonationMessageBase {
+    messageType: 'text';
+    message: string;
 }
+
+interface DonationImageMessage extends DonationMessageBase {
+    messageType: 'image';
+    message: LocallyCachedImage;
+}
+
+export type DonationMessage = DonationTextMessage | DonationImageMessage;
 
 export function donationMessageToString(dm: DonationMessage) {
     let str = `${dm.author}: ${dm.donationAmount} ${dm.donationCurrency.currency}`;
@@ -36,15 +48,11 @@ export function donationMessageToString(dm: DonationMessage) {
 }
 
 export enum DonationClass {
-    Blue,
-    Light_Blue,
-    Green,
-    Yellow,
-    Orange,
-    Magenta,
-    Red1,
-    Red2,
-    Red3,
-    Red4,
-    Red5,
+    Blue = 'Blue',
+    LightBlue = 'LightBlue',
+    Green = 'Green',
+    Yellow = 'Yellow',
+    Orange = 'Orange',
+    Magenta = 'Magenta',
+    Red = 'Red',
 }

@@ -63,7 +63,8 @@
     "npm:neverthrow@^6.2.2": "6.2.2",
     "npm:path-to-regexp@6.2.1": "6.2.1",
     "npm:react@19": "19.0.0",
-    "npm:zod@3.23.4": "3.23.4"
+    "npm:zod@3.23.4": "3.23.4",
+    "npm:zod@^3.24.2": "3.24.2"
   },
   "jsr": {
     "@biegomar/lorem@0.1.1": {
@@ -118,7 +119,7 @@
         "jsr:@std/path@0.225.0",
         "jsr:@std/path@1.0.8",
         "npm:esbuild",
-        "npm:zod"
+        "npm:zod@3.23.4"
       ]
     },
     "@oak/commons@0.10.2": {
@@ -655,6 +656,9 @@
     },
     "zod@3.23.4": {
       "integrity": "sha512-/AtWOKbBgjzEYYQRNfoGKHObgfAZag6qUJX1VbHo2PRBgS+wfWagEY2mizjfyAPcGesrJOcx/wcl0L9WnVrHFw=="
+    },
+    "zod@3.24.2": {
+      "integrity": "sha512-lY7CDW43ECgW9u1TcT3IoXHflywfVqDYze4waEz812jR/bZ8FHDsl7pFQoSZTz5N+2NqRXs8GBwnAwo3ZNxqhQ=="
     }
   },
   "redirects": {
@@ -735,7 +739,8 @@
       "jsr:@std/path@^1.0.8",
       "jsr:@std/testing@^1.0.9",
       "npm:@sireatsalot/youtube.js@^0.0.4",
-      "npm:react@19"
+      "npm:react@19",
+      "npm:zod@^3.24.2"
     ],
     "packageJson": {
       "dependencies": [

@@ -63,6 +63,15 @@ export class LocallyCachedImage {
 
         return cachedImage;
     }
+
+    /**
+     * @returns the contents of the file as a Base64 `data:` URI.
+     */
+    public async asBase64Uri(): Promise<string> {
+        const content = await Deno.readFile(this.localFileName);
+        const decoder = new TextDecoder('utf-8');
+        return `data:image/${this.localFileName.split('.').at(-1)};base64,${btoa(decoder.decode(content))}`;
+    }
 }
 
 if (import.meta.main) {

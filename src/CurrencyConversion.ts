@@ -70,6 +70,7 @@ async function updateCache() {
         create: true,
         write: true,
     });
+    await file.truncate();
     await resp.body!.pipeTo(file.writable);
 }
 

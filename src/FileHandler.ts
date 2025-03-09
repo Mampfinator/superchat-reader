@@ -71,7 +71,7 @@ export class Router {
             matcher,
             specificity,
             fn,
-        } as unknown as Route<string>);
+        } as Route<P> as unknown as Route<string>);
         return this;
     }
 

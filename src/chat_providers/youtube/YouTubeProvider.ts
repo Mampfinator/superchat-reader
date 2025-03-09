@@ -6,6 +6,7 @@ import { ChatMessage, MessageType } from 'youtube.js/dist/scraping/ChatClient.js
 import { LocallyCachedImage } from '@app/ImageCache.ts';
 import { code } from 'currency-codes';
 import { getCurrencyCodeFromString } from '@app/CurrencyConversion.ts';
+import { DenoOrchestrator } from '@app/chat_providers/youtube/DenoOrchestrator.ts';
 
 export class YouTubeDonationProvider implements DonationProvider {
     id = 'youtube';
@@ -22,7 +23,9 @@ export class YouTubeDonationProvider implements DonationProvider {
     private shouldStopResolve?: () => void;
 
     constructor() {
-        this.client = new ScrapingClient();
+        this.client = new ScrapingClient({
+            useOrchestrator: new DenoOrchestrator(),
+        });
     }
 
     async activate(): Promise<boolean> {
@@ -87,9 +90,12 @@ export class YouTubeDonationProvider implements DonationProvider {
 
                 const currencyCode = getCurrencyCodeFromString(message.currency);
                 if (!currencyCode) {
-                    throw new Error('SHIT FUCK SHIT SHIT FUCK');
+                    console.error(`Unknown currency code: ${message.currency}`);
+                    donationMessage.donationCurrency = code('USD')!;
+                } else {
+                    donationMessage.donationCurrency = currencyCode;
                 }
-                donationMessage.donationCurrency = currencyCode;
+
                 // temporarily set to blue while we figure out details of `DonationClass`
                 donationMessage.donationClass = DonationClass.Blue;
                 break;
@@ -110,6 +116,7 @@ export class YouTubeDonationProvider implements DonationProvider {
     }
 
     configure(cb: ConfigurationBuilder): void {
+        cb.addTextBox('streamId', 'Stream ID', (value) => this.config.streamId = value);
     }
 }
 

@@ -1,5 +1,6 @@
 {
     "dependencies": {
-        "currency-codes": "^2.2.0"
+        "currency-codes": "^2.2.0",
+        "neverthrow": "^6.2.2"
     }
 }

@@ -1,5 +1,5 @@
 import { DemoProvider } from '@app/chat_providers/Demo.ts';
-import { YouTubeDonationProvider } from '@app/chat_providers/YouTube.ts';
+import { YouTubeDonationProvider } from '@app/chat_providers/youtube/YouTubeProvider.ts';
 import { ProviderManager } from '@app/ProviderManager.ts';
 import { loadCCCache } from '@app/CurrencyConversion.ts';
 
@@ -9,7 +9,7 @@ const manager = new ProviderManager();
 
 await manager.init();
 
-const isProduction = Deno.env.get('NODE_ENV') === 'production';
+const isProduction = true;
 
 if (!isProduction) {
     manager.register(new DemoProvider());

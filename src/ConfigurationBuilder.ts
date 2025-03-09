@@ -69,23 +69,27 @@ export class ConfigurationBuilder {
         try {
             this.elements.push(new constructor(...parameters));
         } catch (e) {
-            this.invalidate(constructor, e);
+            this.invalidate(constructor.name, e);
         }
         return this;
     }
 
-    // deno-lint-ignore ban-types no-explicit-any
-    private invalidate(constructor: Function, error: any) {
-        if (!(error instanceof ZodError)) {
-            throw error;
-        }
+    /**
+     * Invalidate the builder element due to
+     * @param cName Constructor name, displayed in console
+     * @param error error that caused the issue
+     */
+    private invalidate(cName: string, error: unknown) {
+        // Log to console and invalidate right away
+        console.warn(`Could not add ${cName}.`);
+        this.valid = false;
+        // rethrow any non Zod errors
+        if (!(error instanceof ZodError)) throw error;
 
         for (const issue of error.issues) {
             console.warn(`${error.name} [${issue.code}]: ${issue.message}`);
             this.issues.push(issue);
         }
-        console.warn(`Could not add ${constructor.name}.`);
-        this.valid = false;
     }
 
     /**

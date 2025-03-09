@@ -10,12 +10,12 @@ import { DenoOrchestrator } from '@app/chat_providers/youtube/DenoOrchestrator.t
 
 const CLASS_LOOKUP = {
     4280191205: DonationClass.Blue,
-    4278248959: DonationClass.Light_Blue,
+    4278248959: DonationClass.LightBlue,
     4280150454: DonationClass.Green,
     4294953512: DonationClass.Yellow,
     4294278144: DonationClass.Orange,
     4290910299: DonationClass.Magenta,
-    4293271831: DonationClass.Red1,
+    4293271831: DonationClass.Red,
 } as Record<number, DonationClass>;
 
 export class YouTubeDonationProvider implements DonationProvider {

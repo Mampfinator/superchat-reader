@@ -23,7 +23,7 @@ export class YouTubeDonationProvider implements DonationProvider {
     name = 'YouTube';
     version = '0.0.1';
 
-    private readonly client: ScrapingClient;
+    private client!: ScrapingClient;
     private config!: YouTubeConfig;
 
     // youtube.js has no internal mechanism to stop a chat reader, so we use this variable
@@ -33,14 +33,15 @@ export class YouTubeDonationProvider implements DonationProvider {
     private shouldStopResolve?: () => void;
 
     constructor() {
-        this.client = new ScrapingClient({
-            useOrchestrator: new DenoOrchestrator(),
-        });
     }
 
     async activate(): Promise<boolean> {
         try {
             this.config = await SavedConfig.getOrCreate(YouTubeConfig);
+            this.client = new ScrapingClient({
+                useOrchestrator: new DenoOrchestrator(),
+            });
+
             await this.client.init();
 
             this.shouldStop = false;
@@ -57,6 +58,7 @@ export class YouTubeDonationProvider implements DonationProvider {
 
     async deactivate(): Promise<boolean> {
         this.shouldStop = true;
+        await this.client.destroy();
         await this.shouldStopPromise;
         return true;
     }

@@ -191,7 +191,7 @@ class ConfigCheckbox extends ConfigElementBase<typeof ConfigCheckboxOptions> {
             attr: {
                 label: this.label,
                 uuid: this.callbackIdentifier,
-                checked: this.options.value ?? false,
+                value: this.options.value ?? false,
             },
         };
     }

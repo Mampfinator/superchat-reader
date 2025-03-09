@@ -108,8 +108,7 @@
             // Set up checkbox
             checkbox.type = "checkbox"
             checkbox.id = uuid
-            const startState = this.getAttribute("checked").toUpperCase() == "TRUE"
-            checkbox.checked = startState
+            checkbox.checked = value == "true"
             checkbox.oninput = () => {
                 globalThis[`checked_${uuid}`](checkbox.checked)
             }

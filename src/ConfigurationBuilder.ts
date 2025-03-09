@@ -15,7 +15,7 @@ export class ConfigurationBuilder {
      * @param label The text to display next to the checkbox
      * @returns `this` (for chaining)
      */
-    addCheckbox(label: string, options: zod.input<typeof ConfigCheckboxOptions>): this {
+    addCheckbox(label: string, options: ConfigCheckboxOptions): this {
         return this.addElement(ConfigCheckbox, label, options);
     }
 
@@ -155,8 +155,8 @@ abstract class ConfigElementBase<Schema extends zod.Schema> {
 
     /**
      * @param label Element label, typically displayed next to the element
-     * @param replaceObject Map of key-value pairs to replace inside the snippet. {label} and {callbackID} are
-     * automatically provided.
+     * @param schema Schema to validate input options with.
+     * @param options Input options.
      */
     constructor(readonly label: string, schema: Schema, options: zod.input<Schema>) {
         this.callbackIdentifier = crypto.randomUUID().replaceAll('-', '_');
@@ -191,7 +191,7 @@ class ConfigCheckbox extends ConfigElementBase<typeof ConfigCheckboxOptions> {
             attr: {
                 label: this.label,
                 uuid: this.callbackIdentifier,
-                value: this.options.value ?? false,
+                value: this.options.value,
             },
         };
     }

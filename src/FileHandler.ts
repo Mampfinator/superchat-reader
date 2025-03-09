@@ -98,6 +98,16 @@ export class Router {
             const groups = name.match(route.matcher)?.groups;
             const remainder = name.replace(route.matcher, '');
             return await route.fn(groups ?? {}, path, remainder);
+        } else {
+            return new Response(
+                JSON.stringify({
+                    error: `Resource ${name} not found.`,
+                }),
+                {
+                    status: 404,
+                    statusText: 'Not Found By Router',
+                },
+            );
         }
     }
 }

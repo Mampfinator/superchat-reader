@@ -1,75 +1,110 @@
 import { crypto } from '@std/crypto/crypto';
-import UISnippets from '@app/UISnippets/dir.ts';
 import { WebUI } from 'https://deno.land/x/webui@2.5.3/mod.ts';
+import { z as zod, ZodError } from 'zod';
+import { Constructor } from '@app/util.ts';
 
+// #region Main builder
 export class ConfigurationBuilder {
-    private elements: ConfigElementBase[] = [];
+    private valid = true;
+    private issues: zod.ZodIssue[] = [];
+    // deno-lint-ignore no-explicit-any
+    private elements: ConfigElementBase<any>[] = [];
 
     /**
      * Adds a checkbox to the configuration panel.
      * @param label The text to display next to the checkbox
-     * @param callback A function to be called when the value changes
+     * @returns `this` (for chaining)
      */
-    addCheckbox(label: string, callback: (newValue: boolean) => void): this {
-        this.elements.push(new ConfigCheckbox(label, callback));
-        return this;
+    addCheckbox(label: string, options: ConfigCheckboxOptions): this {
+        return this.addElement(ConfigCheckbox, label, options);
     }
 
     /**
      * Add a slider with min and max values to the configuration panel
      * @param label The text to display next to the slider
-     * @param min Minimum value
-     * @param max Maximum value
-     * @param callback The function to call when the value changes
+     * @returns `this` (for chaining)
      */
-    addSlider(
-        label: string,
-        min: number,
-        max: number,
-        step = 1,
-        defaultVal: number | null = null,
-        callback: (newValue: number) => void,
-    ): this {
-        this.elements.push(new ConfigSlider(label, min, max, step, defaultVal, callback));
-        return this;
+    addSlider(label: string, options: ConfigSliderOptions): this {
+        return this.addElement(ConfigSlider, label, options);
     }
 
     /**
      * Add a textboxt to the configuration panel, where the user can input any text
-     * TODO: Probably make validate just a regex
      * @param label The text to display next to the textbox
-     * @param defaultVal The default value of the textbox
-     * @param callback The function to call when the value changes, after validation
-     * @param validate The function to call when the value changes, to validate the new value
+     * @returns `this` (for chaining)
      */
-    addTextBox(
-        label: string,
-        defaultVal: string,
-        callback: (newValue: string) => void,
-        validate: (newValue: string) => string = (v) => v,
-    ): this {
-        this.elements.push(new ConfigTextBox(label, defaultVal, callback, validate));
-        return this;
+    addTextBox(label: string, options: ConfigTextBoxOptions): this {
+        return this.addElement(ConfigTextBox, label, options);
     }
 
     /**
      * Add a clickable button to the configuration panel
      * @param label The text to display on the button
-     * @param callback The function to call when the button is clicked
+     * @returns `this` (for chaining)
      */
-    addButton(label: string, callback: () => void): this {
-        this.elements.push(new ConfigButton(label, callback));
+    addButton(label: string, options: ConfigButtonOptions): this {
+        return this.addElement(ConfigButton, label, options);
+    }
+
+    /**
+     * Add a static paragraph of text to the configuration panel.
+     * @param content Any valid HTML string
+     * @returns `this` (for chaining)
+     */
+    addParagraph(content: zod.input<typeof ConfigParagraphOptions>): this {
+        return this.addElement(ConfigPragraph, content);
+    }
+
+    /**
+     * Add an arbitrary element to the builder. Internal only.
+     * @param constructor Relevant element constructor function
+     * @param parameters Constructor parameters
+     * @returns `this` (for chaining)
+     */
+    private addElement<
+        T extends ConfigElementBase<zod.Schema>,
+        C extends Constructor<T>,
+        P extends ConstructorParameters<C>,
+    >(constructor: C, ...parameters: P): this {
+        try {
+            this.elements.push(new constructor(...parameters));
+        } catch (e) {
+            this.invalidate(constructor.name, e);
+        }
         return this;
+    }
+
+    /**
+     * Invalidate the builder element due to
+     * @param cName Constructor name, displayed in console
+     * @param error error that caused the issue
+     */
+    private invalidate(cName: string, error: unknown) {
+        // Log to console and invalidate right away
+        console.warn(`Could not add ${cName}.`);
+        this.valid = false;
+        // rethrow any non Zod errors
+        if (!(error instanceof ZodError)) throw error;
+
+        for (const issue of error.issues) {
+            console.warn(`${error.name} [${issue.code}]: ${issue.message}`);
+            this.issues.push(issue);
+        }
     }
 
     /**
      * Build the configuration panel for display
      * @returns An HTML string for rendering
      */
-    build(): string {
+    // TODO: Make this render an error instead of throwing
+    render(): string {
+        if (!this.valid) {
+            throw new Deno.errors.InvalidData('Built configuration not valid. Refusing to render.');
+        }
         let content = '<div>';
         for (const elem of this.elements) {
-            content += elem.render();
+            const tagStr = renderElementDescriptor(elem.build());
+            content += tagStr;
         }
         content += '</div>';
 
@@ -82,156 +117,270 @@ export class ConfigurationBuilder {
         }
     }
 }
+// #endregion
 
-const CheckboxHtmlSnippet = await (await UISnippets.load('checkbox.html')).text();
-const ButtonHtmlSnippet = await (await UISnippets.load('button.html')).text();
-const SliderHtmlSnippet = await (await UISnippets.load('slider.html')).text();
-const TextboxHtmlSnippet = await (await UISnippets.load('textbox.html')).text();
+type ElementDescriptor = {
+    tagName: string;
+    attr: Record<string, string | number | boolean>;
+    content?: string | ElementDescriptor | ElementDescriptor[];
+};
+
+function renderElementDescriptor(descriptor: ElementDescriptor): string {
+    const { tagName, attr, content } = descriptor;
+    let tagStr = `<${tagName} `;
+    for (const [name, value] of Object.entries(attr)) {
+        tagStr += `${name}="${value}" `;
+    }
+    tagStr += '>';
+    if (content) {
+        if (typeof content === 'string') {
+            tagStr += content;
+        } else if (Array.isArray(content)) {
+            for (const elem of content) {
+                tagStr += renderElementDescriptor(elem);
+            }
+        } else {
+            tagStr += renderElementDescriptor(content);
+        }
+    }
+    tagStr += `</${tagName}>`;
+    return tagStr;
+}
 
 /** Items that all elements in the configuration panel share */
-abstract class ConfigElementBase {
-    /**
-     * HTML snippet that defines the rendered config element. Has keys like {label} that will be replaced
-     * during the render phase.
-     */
-    abstract readonly snippet: string;
-    /** Dictionary of replacements to perform on the HTML snippet. */
-    readonly replacementKeys: { [x: string]: string | number };
-    readonly replacementRegex: RegExp;
+abstract class ConfigElementBase<Schema extends zod.Schema> {
     /** Unique ID to assign to webUI bindings */
     readonly callbackIdentifier;
-    /** Function to be called when the element is interacted with */
-    // deno-lint-ignore no-explicit-any
-    abstract readonly callback: (...args: any[]) => void;
+    protected options: zod.infer<Schema>;
 
     /**
      * @param label Element label, typically displayed next to the element
-     * @param replaceObject Map of key-value pairs to replace inside the snippet. {label} and {callbackID} are
-     * automatically provided.
+     * @param schema Schema to validate input options with.
+     * @param options Input options.
      */
-    constructor(label: string, replaceObject: { [x: string]: string | number } = {}) {
+    constructor(readonly label: string, schema: Schema, options: zod.input<Schema>) {
         this.callbackIdentifier = crypto.randomUUID().replaceAll('-', '_');
-        replaceObject['callbackID'] = this.callbackIdentifier;
-        replaceObject['label'] = label;
-        this.replacementKeys = replaceObject;
-        const innerRegex = Object.keys(this.replacementKeys).join('|');
-        this.replacementRegex = new RegExp(`{(${innerRegex})}`, 'gi');
+        const parsed = schema.parse(options);
+        this.options = parsed;
     }
 
-    /** Render the element to HTML */
-    render(): string {
-        return this.snippet.replaceAll(this.replacementRegex, (str) => {
-            str = str.replaceAll(/[{}]/g, '');
-            return String(this.replacementKeys[str]!);
-        });
-    }
-
+    /** Render the element to tag metadata */
+    abstract build(): ElementDescriptor;
     abstract bind(wui: WebUI): void;
 }
 
-/** Dynamically handled checkbox for configuration */
-export class ConfigCheckbox extends ConfigElementBase {
-    snippet = CheckboxHtmlSnippet;
+// #region Checkbox element
+const ConfigCheckboxOptions = zod.object({
+    value: zod.boolean().optional().default(false),
+    callback: zod.function()
+        .args(zod.boolean())
+        .optional()
+        .default(() => console.log),
+});
+type ConfigCheckboxOptions = zod.input<typeof ConfigCheckboxOptions>;
 
-    constructor(label: string, readonly callback: (newValue: boolean) => void) {
-        super(label);
+/** Dynamically handled checkbox for configuration */
+class ConfigCheckbox extends ConfigElementBase<typeof ConfigCheckboxOptions> {
+    constructor(label: string, options: ConfigCheckboxOptions) {
+        super(label, ConfigCheckboxOptions, options);
+    }
+
+    build(): ElementDescriptor {
+        return {
+            tagName: 'config-checkbox',
+            attr: {
+                label: this.label,
+                uuid: this.callbackIdentifier,
+                value: this.options.value,
+            },
+        };
     }
 
     bind(wui: WebUI): void {
         wui.bind(`checked_${this.callbackIdentifier}`, ({ arg }) => {
             const checkStatus = arg.boolean(0);
-            this.callback(checkStatus);
+            this.options.callback(checkStatus);
         });
     }
 }
+// #endregion
+
+// #region Slider element
+const ConfigSliderOptions = zod.object({
+    value: zod.number().optional().default(0),
+    callback: zod.function()
+        .args(zod.number())
+        .default(() => console.log),
+    range: zod.tuple([zod.number().nonnegative(), zod.number().nonnegative()]).default([0, 10]),
+    step: zod.number().nonnegative().optional().default(1),
+}).superRefine(({ range, value }, ctx) => {
+    const [rangeMin, rangeMax] = range;
+    if (rangeMin >= rangeMax) {
+        ctx.addIssue({
+            code: 'custom',
+            message: 'range min must be smaller than max',
+            fatal: true,
+        });
+    }
+    if (value < rangeMin) {
+        ctx.addIssue({
+            code: 'too_small',
+            message: 'value must be within range',
+            inclusive: true,
+            minimum: rangeMin,
+            type: 'number',
+        });
+    } else if (value > rangeMax) {
+        ctx.addIssue({
+            code: 'too_big',
+            message: 'value must be within range',
+            inclusive: true,
+            maximum: rangeMax,
+            type: 'number',
+        });
+    }
+});
+
+type ConfigSliderOptions = zod.input<typeof ConfigSliderOptions>;
 
 /** Dynamically handled slider for configuration */
-export class ConfigSlider extends ConfigElementBase {
-    snippet = SliderHtmlSnippet;
+class ConfigSlider extends ConfigElementBase<typeof ConfigSliderOptions> {
+    constructor(label: string, options: ConfigSliderOptions) {
+        super(label, ConfigSliderOptions, options);
+    }
 
-    constructor(
-        label: string,
-        readonly min: number,
-        readonly max: number,
-        readonly step: number,
-        readonly defaultVal: number | null,
-        readonly callback: (newValue: number) => void,
-    ) {
-        if (min >= max) {
-            throw new Deno.errors.InvalidData(`Min must be less than max [${min} !< ${max}]`);
-        }
-        if (!defaultVal) {
-            defaultVal = min;
-        }
-        super(label, { min, max, step, defaultVal });
+    build(): ElementDescriptor {
+        return {
+            tagName: 'config-slider',
+            attr: {
+                label: this.label,
+                uuid: this.callbackIdentifier,
+                min: this.options.range[0],
+                max: this.options.range[1],
+                step: this.options.step,
+                value: this.options.value,
+            },
+        };
     }
 
     bind(wui: WebUI): void {
         wui.bind(`slider_${this.callbackIdentifier}`, ({ arg }) => {
             const value = arg.number(0);
-            this.callback(value);
+            this.options.callback(value);
         });
     }
 }
+// #endregion
+
+// #region Textbox element
+const ConfigTextBoxOptions = zod.union([
+    zod.object({
+        placeholder: zod.string().optional(),
+        type: zod.literal('text').optional().default('text'),
+        value: zod.string().optional(),
+        callback: zod.function()
+            .args(zod.string())
+            .optional()
+            .default(() => console.log),
+    }),
+    zod.object({
+        placeholder: zod.string().optional(),
+        type: zod.literal('number'),
+        value: zod.number().optional(),
+        callback: zod.function()
+            .args(zod.number())
+            .optional()
+            .default(() => console.log),
+    }),
+]);
+type ConfigTextBoxOptions = zod.input<typeof ConfigTextBoxOptions>;
 
 /** Dynamically handled textbox for configuration */
-export class ConfigTextBox extends ConfigElementBase {
-    snippet = TextboxHtmlSnippet;
+class ConfigTextBox extends ConfigElementBase<typeof ConfigTextBoxOptions> {
+    constructor(label: string, options: ConfigTextBoxOptions) {
+        super(label, ConfigTextBoxOptions, options);
+    }
 
-    constructor(
-        label: string,
-        readonly defaultVal: string,
-        readonly callback: (newValue: string) => void,
-        readonly validate: (newValue: string) => string,
-    ) {
-        super(label, {
-            defaultVal,
-        });
+    build(): ElementDescriptor {
+        return {
+            tagName: 'config-textbox',
+            attr: {
+                label: this.label,
+                uuid: this.callbackIdentifier,
+                value: this.options.value ?? '',
+                placeholder: this.options.placeholder ?? '',
+                type: this.options.type ?? 'text',
+            },
+        };
     }
 
     bind(wui: WebUI): void {
         wui.bind(`textbox_${this.callbackIdentifier}`, ({ arg }) => {
-            this.callback(arg.string(0));
+            if (this.options.type === 'number') {
+                this.options.callback(arg.number(0));
+            } else {
+                this.options.callback(arg.string(0));
+            }
         });
     }
 }
+// #endregion
+
+// #region Button element
+const ConfigButtonOptions = zod.object({
+    callback: zod
+        .function()
+        .optional()
+        .default(() => () => console.log('Boop')),
+});
+type ConfigButtonOptions = zod.input<typeof ConfigButtonOptions>;
 
 /** Dynamically handled button for configuration */
-export class ConfigButton extends ConfigElementBase {
-    snippet = ButtonHtmlSnippet;
+class ConfigButton extends ConfigElementBase<typeof ConfigButtonOptions> {
+    constructor(label: string, options: ConfigButtonOptions) {
+        super(label, ConfigButtonOptions, options);
+    }
 
-    constructor(label: string, readonly callback: () => void) {
-        super(label);
+    build() {
+        return {
+            tagName: 'config-button',
+            attr: {
+                uuid: this.callbackIdentifier,
+                label: this.label,
+            },
+        };
     }
 
     bind(wui: WebUI): void {
-        wui.bind(this.callbackIdentifier, this.callback);
+        wui.bind(this.callbackIdentifier, () => {
+            this.options.callback();
+        });
     }
 }
+// #endregion
 
-if (import.meta.main) {
-    const cb = new ConfigurationBuilder();
-    cb.addButton('click here to boop', () => {
-        console.log('BOOP');
-    });
-    cb.addCheckbox('check', (newVal) => {
-        console.log(newVal);
-    });
-    cb.addSlider('slider', 0, 10, 1, undefined, (newVal) => {
-        console.log(newVal);
-    });
-    cb.addTextBox('Type here!', 'pls', (str) => {
-        console.log(str);
-    });
-    const win = new WebUI();
-    const html = `<html><head><script src="webui.js"></script></head>
-            <body>
-                ${cb.build()}
-            </body>
-        </html>`;
-    cb.bind(win);
-    // We don't care about errors
-    win.show(html).catch(() => {});
+// #region  Paragraph element
+const ConfigParagraphOptions = zod.string();
+type ConfigParagraphOptions = zod.input<typeof ConfigParagraphOptions>;
 
-    await WebUI.wait();
+/** Static paragraph element for displaying information */
+class ConfigPragraph extends ConfigElementBase<typeof ConfigParagraphOptions> {
+    constructor(options: ConfigParagraphOptions) {
+        super('', ConfigParagraphOptions, options);
+    }
+
+    build(): ElementDescriptor {
+        return {
+            tagName: 'p',
+            attr: {
+                class: 'config-text',
+            },
+            content: this.options,
+        };
+    }
+
+    bind(_: WebUI): void {
+        return;
+    }
 }
+// #endregion

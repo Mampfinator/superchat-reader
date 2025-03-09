@@ -1,6 +1,6 @@
 import { DonationMessage, DonationProvider } from '@app/DonationProvider.ts';
 import { Combine } from '@app/util.ts';
-import { getProgramConfig, ProgramConfigInterface } from '@app/MainConfig.ts';
+import { getProgramConfig } from '@app/MainConfig.ts';
 
 /**
  * Indicates that a requested provider was not registered.
@@ -16,7 +16,7 @@ export class ProviderNotFound extends Error {
  */
 export class ProviderManager {
     private readonly providers = new Map<string, DonationProvider>();
-    private config!: ProgramConfigInterface;
+    private config!: Awaited<ReturnType<typeof getProgramConfig>>;
     private combine = new Combine<DonationMessage>();
 
     public async init() {

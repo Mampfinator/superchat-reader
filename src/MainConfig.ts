@@ -49,4 +49,3 @@ class ProgramConfig extends SavedConfig {
         return [this[MIN_WIDTH], this[MIN_HEIGHT]];
     }
 }
-export type ProgramConfigInterface = ProgramConfig;

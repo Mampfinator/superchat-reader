@@ -2,7 +2,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { IRequestOrchestrator } from 'youtube.js';
 import { FetchOptions, FetchReturn, FetchTransform } from 'youtube.js/dist/scraping/scraping.interfaces.js';
-import { err, ok, type Result } from 'neverthrow';
+import { Err, err, Ok, ok, Result } from 'neverthrow';
 import { FetchError, FetchErrorCode } from 'youtube.js/dist/scraping/errors/FetchError.js';
 import { getSetCookies, setCookie } from 'https://deno.land/std@0.224.0/http/mod.ts';
 
@@ -156,7 +156,11 @@ export class DenoOrchestrator implements IRequestOrchestrator {
         try {
             const response = await next.callback();
             const transformed = next.transform ? await next.transform(response) : response;
-            next.resolve(ok(transformed));
+            if (transformed instanceof Ok || transformed instanceof Err) {
+                next.resolve(transformed);
+            } else {
+                next.resolve(ok(transformed));
+            }
         } catch (error) {
             if (error instanceof FetchError) {
                 next.reject(error);
@@ -178,5 +182,10 @@ export class DenoOrchestrator implements IRequestOrchestrator {
                 this.queue.unshift(next);
             }
         }
+    }
+
+    destroy(): Promise<void> {
+        clearInterval(this.interval);
+        return Promise.resolve();
     }
 }

@@ -4,7 +4,6 @@ import { ProviderManager } from '@app/ProviderManager.ts';
 import { DemoProvider } from '@app/chat_providers/Demo.ts';
 import { LocallyCachedImage } from '@app/ImageCache.ts';
 import { ConfigurationBuilder } from '@app/ConfigurationBuilder.ts';
-import { sleep } from '@app/util.ts';
 
 let mainWindowHtml = await (await UISnippets.load('index.html')).text();
 const mainWindowCss = await (await UISnippets.load('index.css')).text();
@@ -19,7 +18,7 @@ const manager = new ProviderManager();
 await manager.init();
 
 const demoprov = new DemoProvider();
-const democonfig = new ConfigurationBuilder();
+const democonfig = new ConfigurationBuilder(demoprov);
 
 manager.register(demoprov);
 

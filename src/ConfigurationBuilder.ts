@@ -2,13 +2,16 @@ import { crypto } from '@std/crypto/crypto';
 import { WebUI } from 'https://deno.land/x/webui@2.5.3/mod.ts';
 import { z as zod, ZodError } from 'zod';
 import { Constructor } from '@app/util.ts';
+import { DonationProvider } from '@app/DonationProvider.ts';
 
 // #region Main builder
 export class ConfigurationBuilder {
     private valid = true;
-    private issues: zod.ZodIssue[] = [];
+    private issues: { path: (string | number)[]; code: string; message: string }[] = [];
     // deno-lint-ignore no-explicit-any
     private elements: ConfigElementBase<any>[] = [];
+
+    constructor(private readonly provider?: DonationProvider) {}
 
     /**
      * Adds a checkbox to the configuration panel.
@@ -87,8 +90,12 @@ export class ConfigurationBuilder {
         if (!(error instanceof ZodError)) throw error;
 
         for (const issue of error.issues) {
-            console.warn(`${error.name} [${issue.code}]: ${issue.message}`);
-            this.issues.push(issue);
+            console.warn(
+                `Error configuring "${this.provider?.name ?? 'unknown'}" (${
+                    this.provider?.id ?? 'unknown'
+                }): ${cName}.${issue.path.join('.')} [${issue.code}]: ${issue.message}`,
+            );
+            this.issues.push({ ...issue, path: [cName, ...issue.path] });
         }
     }
 
@@ -99,7 +106,28 @@ export class ConfigurationBuilder {
     // TODO: Make this render an error instead of throwing
     render(): string {
         if (!this.valid) {
-            throw new Deno.errors.InvalidData('Built configuration not valid. Refusing to render.');
+            return renderElementDescriptor({
+                tagName: 'details',
+                attr: { class: 'config-error-container' },
+                content: [
+                    {
+                        tagName: 'summary',
+                        attr: { class: 'config-error-summary' },
+                        content: `Error configuring "${this.provider?.name ?? 'unknown'}" (${
+                            this.provider?.id ?? 'unknown'
+                        })`,
+                    },
+                    {
+                        tagName: 'ul',
+                        attr: { class: 'config-error-issues' },
+                        content: this.issues.map(({ path, code, message }) => ({
+                            tagName: 'li',
+                            attr: { class: 'config-error-issue' },
+                            content: `${path.join('.')} [${code}]: ${message}`,
+                        })),
+                    },
+                ],
+            });
         }
         let content = '<div>';
         for (const elem of this.elements) {
@@ -220,6 +248,7 @@ const ConfigSliderOptions = zod.object({
             code: 'custom',
             message: 'range min must be smaller than max',
             fatal: true,
+            path: ['range'],
         });
     }
     if (value < rangeMin) {
@@ -229,6 +258,7 @@ const ConfigSliderOptions = zod.object({
             inclusive: true,
             minimum: rangeMin,
             type: 'number',
+            path: ['value'],
         });
     } else if (value > rangeMax) {
         ctx.addIssue({
@@ -237,6 +267,7 @@ const ConfigSliderOptions = zod.object({
             inclusive: true,
             maximum: rangeMax,
             type: 'number',
+            path: ['value'],
         });
     }
 });

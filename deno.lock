@@ -58,6 +58,7 @@
     "jsr:@std/testing@^1.0.9": "1.0.9",
     "jsr:@std/text@0.221": "0.221.0",
     "npm:@sireatsalot/youtube.js@^0.0.4": "0.0.4_axios@1.7.9_tough-cookie@4.1.4_undici@5.28.5",
+    "npm:@sireatsalot/youtube.js@^0.0.5": "0.0.5_axios@1.7.9_tough-cookie@4.1.4_undici@5.28.5",
     "npm:currency-codes@^2.2.0": "2.2.0",
     "npm:esbuild@0.22.0": "0.22.0",
     "npm:neverthrow@^6.2.2": "6.2.2",
@@ -392,6 +393,19 @@
     },
     "@sireatsalot/youtube.js@0.0.4_axios@1.7.9_tough-cookie@4.1.4_undici@5.28.5": {
       "integrity": "sha512-nWO5ZLvVxNp8yPwiOQfdYmxB5TNMNVKP6DSmij8PVgOYW7fSzDrbUsiAYYOEM2Cs7eRj+xRWIO5X/2xggVDCPA==",
+      "dependencies": [
+        "axios",
+        "axios-cookiejar-support",
+        "fast-xml-parser",
+        "neverthrow",
+        "reflect-metadata",
+        "tough-cookie",
+        "ts-mixer",
+        "undici"
+      ]
+    },
+    "@sireatsalot/youtube.js@0.0.5_axios@1.7.9_tough-cookie@4.1.4_undici@5.28.5": {
+      "integrity": "sha512-jzz+Ob8uXnslMIcS36hz2tKKPxlKA0LEkoyrUkZPmFOhGbliW2SJoFSNKR54SD9Z+pURc2PQTdtQf3laKN1w4w==",
       "dependencies": [
         "axios",
         "axios-cookiejar-support",
@@ -744,6 +758,7 @@
     ],
     "packageJson": {
       "dependencies": [
+        "npm:@sireatsalot/youtube.js@^0.0.5",
         "npm:currency-codes@^2.2.0",
         "npm:neverthrow@^6.2.2"
       ]

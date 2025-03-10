@@ -98,11 +98,14 @@ export class YouTubeDonationProvider implements DonationProvider {
             case MessageType.SuperChat: {
                 donationMessage.message = message.message?.simpleText ?? '';
                 donationMessage.messageType = 'text';
-                donationMessage.donationAmount = message.amount;
 
-                const currencyCode = getCurrencyCodeFromString(message.currency);
+                donationMessage.donationAmount = parseFloat(
+                    message.currencyString.replaceAll(/[^0-9,\.]/, '').replaceAll(',', '.'),
+                );
+
+                const currencyCode = getCurrencyCodeFromString(message.currencyString);
                 if (!currencyCode) {
-                    console.error(`Unknown currency code: ${message.currency}`);
+                    console.error(`Unknown currency code: ${message.currencyString}`);
                     donationMessage.donationCurrency = code('USD')!;
                 } else {
                     donationMessage.donationCurrency = currencyCode;
@@ -115,10 +118,11 @@ export class YouTubeDonationProvider implements DonationProvider {
                 donationMessage.message = await LocallyCachedImage.saveNew(await fetch(message.sticker));
                 donationMessage.messageType = 'image';
                 // FIXME: youtube.js doesn't support donation amounts for stickers yet. This is an oversight and will be fixed soon:tm:.
-                donationMessage.donationAmount = 0;
-                donationMessage.donationCurrency = code('USD');
-                // temporarily set to blue while we figure out details of `DonationClass`
-                donationMessage.donationClass = DonationClass.Blue;
+                donationMessage.donationAmount = parseFloat(
+                    message.currencyString.replaceAll(/[^0-9,\.]/, '').replaceAll(',', '.'),
+                );
+                donationMessage.donationCurrency = getCurrencyCodeFromString(message.currencyString);
+                donationMessage.donationClass = CLASS_LOOKUP[message.backgroundColor];
                 break;
             }
         }

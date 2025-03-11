@@ -1,5 +1,5 @@
 import { DemoProvider } from '@app/chat_providers/Demo.ts';
-import { YouTubeDonationProvider } from '@app/chat_providers/YouTube.ts';
+import { YouTubeDonationProvider } from '@app/chat_providers/youtube/YouTubeProvider.ts';
 import { ProviderManager } from '@app/ProviderManager.ts';
 import { loadCCCache } from '@app/CurrencyConversion.ts';
 import { getProgramConfig } from '@app/MainConfig.ts';

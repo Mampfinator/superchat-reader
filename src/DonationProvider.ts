@@ -1,5 +1,5 @@
 import { CurrencyCodeRecord } from 'currency-codes';
-import { ConfigurationBuilder } from '@app/ConfigurationBuilder.ts';
+import { ConfigurationBuilder, ElementDescriptor, renderElementDescriptor } from '@app/ConfigurationBuilder.ts';
 import { LocallyCachedImage } from '@app/ImageCache.ts';
 
 export interface DonationProvider {
@@ -40,11 +40,38 @@ interface DonationImageMessage extends DonationMessageBase {
 
 export type DonationMessage = DonationTextMessage | DonationImageMessage;
 
-export function donationMessageToString(dm: DonationMessage) {
-    let str = `${dm.author}: ${dm.donationAmount} ${dm.donationCurrency.currency}`;
-    str += '\n';
-    str += `${dm.message}`;
-    return str;
+export async function renderDonationMessage(message: DonationMessage): Promise<string> {
+    let element: ElementDescriptor;
+    const commonAttributes = {
+        author: message.author,
+        currency: message.donationCurrency.code,
+        amount: message.donationAmount,
+        donationClass: message.donationClass,
+    } as Record<string, string | number>;
+
+    if (message.authorAvatar) {
+        commonAttributes.avatarUri = await message.authorAvatar.asBase64Uri();
+    }
+
+    if (message.messageType === 'text') {
+        element = {
+            tagName: 'donation-text-message',
+            attr: {
+                ...commonAttributes,
+            },
+            content: message.message,
+        };
+    } else {
+        element = {
+            tagName: 'donation-image-message',
+            attr: {
+                ...commonAttributes,
+                image: await message.message.asBase64Uri(),
+            },
+        };
+    }
+
+    return renderElementDescriptor(element);
 }
 
 export enum DonationClass {

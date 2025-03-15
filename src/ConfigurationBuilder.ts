@@ -147,13 +147,13 @@ export class ConfigurationBuilder {
 }
 // #endregion
 
-type ElementDescriptor = {
+export type ElementDescriptor = {
     tagName: string;
     attr: Record<string, string | number | boolean>;
     content?: string | ElementDescriptor | ElementDescriptor[];
 };
 
-function renderElementDescriptor(descriptor: ElementDescriptor): string {
+export function renderElementDescriptor(descriptor: ElementDescriptor): string {
     const { tagName, attr, content } = descriptor;
     let tagStr = `<${tagName} `;
     for (const [name, value] of Object.entries(attr)) {

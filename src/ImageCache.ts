@@ -1,6 +1,7 @@
 import * as path from '@std/path';
 import { crypto } from '@std/crypto';
 import { expandGlob } from '@std/fs';
+import { encodeBase64 } from 'jsr:@std/encoding@0.224.0/base64';
 
 export class LocallyCachedImage {
     /** Local file name. Most likely hash of the file contents, SHA-1 */
@@ -69,8 +70,7 @@ export class LocallyCachedImage {
      */
     public async asBase64Uri(): Promise<string> {
         const content = await Deno.readFile(this.localFileName);
-        const decoder = new TextDecoder('utf-8');
-        return `data:image/${this.localFileName.split('.').at(-1)};base64,${btoa(decoder.decode(content))}`;
+        return `data:image/${this.localFileName.split('.').at(-1)};base64,${encodeBase64(content)}`;
     }
 }
 

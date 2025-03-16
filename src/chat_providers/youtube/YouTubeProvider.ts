@@ -6,13 +6,24 @@ import { ChatMessage, MessageType } from 'youtube.js/dist/scraping/ChatClient.js
 import { LocallyCachedImage } from '@app/ImageCache.ts';
 import { code } from 'currency-codes';
 import { getCurrencyCodeFromString } from '@app/CurrencyConversion.ts';
+import { DenoOrchestrator } from '@app/chat_providers/youtube/DenoOrchestrator.ts';
+
+const CLASS_LOOKUP = {
+    4280191205: DonationClass.Blue,
+    4278248959: DonationClass.LightBlue,
+    4280150454: DonationClass.Green,
+    4294953512: DonationClass.Yellow,
+    4294278144: DonationClass.Orange,
+    4290910299: DonationClass.Magenta,
+    4293271831: DonationClass.Red,
+} as Record<number, DonationClass>;
 
 export class YouTubeDonationProvider implements DonationProvider {
     id = 'youtube';
     name = 'YouTube';
     version = '0.0.1';
 
-    private readonly client: ScrapingClient;
+    private client!: ScrapingClient;
     private config!: YouTubeConfig;
 
     // youtube.js has no internal mechanism to stop a chat reader, so we use this variable
@@ -22,12 +33,15 @@ export class YouTubeDonationProvider implements DonationProvider {
     private shouldStopResolve?: () => void;
 
     constructor() {
-        this.client = new ScrapingClient();
     }
 
     async activate(): Promise<boolean> {
         try {
             this.config = await SavedConfig.getOrCreate(YouTubeConfig);
+            this.client = new ScrapingClient({
+                useOrchestrator: new DenoOrchestrator(),
+            });
+
             await this.client.init();
 
             this.shouldStop = false;
@@ -44,6 +58,7 @@ export class YouTubeDonationProvider implements DonationProvider {
 
     async deactivate(): Promise<boolean> {
         this.shouldStop = true;
+        await this.client.destroy();
         await this.shouldStopPromise;
         return true;
     }
@@ -83,25 +98,31 @@ export class YouTubeDonationProvider implements DonationProvider {
             case MessageType.SuperChat: {
                 donationMessage.message = message.message?.simpleText ?? '';
                 donationMessage.messageType = 'text';
-                donationMessage.donationAmount = message.amount;
 
-                const currencyCode = getCurrencyCodeFromString(message.currency);
+                donationMessage.donationAmount = parseFloat(
+                    message.currencyString.replaceAll(/[^0-9,\.]/, '').replaceAll(',', '.'),
+                );
+
+                const currencyCode = getCurrencyCodeFromString(message.currencyString);
                 if (!currencyCode) {
-                    throw new Error('SHIT FUCK SHIT SHIT FUCK');
+                    console.error(`Unknown currency code: ${message.currencyString}`);
+                    donationMessage.donationCurrency = code('USD')!;
+                } else {
+                    donationMessage.donationCurrency = currencyCode;
                 }
-                donationMessage.donationCurrency = currencyCode;
-                // temporarily set to blue while we figure out details of `DonationClass`
-                donationMessage.donationClass = DonationClass.Blue;
+
+                donationMessage.donationClass = CLASS_LOOKUP[message.backgroundColor];
                 break;
             }
             case MessageType.SuperSticker: {
                 donationMessage.message = await LocallyCachedImage.saveNew(await fetch(message.sticker));
                 donationMessage.messageType = 'image';
                 // FIXME: youtube.js doesn't support donation amounts for stickers yet. This is an oversight and will be fixed soon:tm:.
-                donationMessage.donationAmount = 0;
-                donationMessage.donationCurrency = code('USD');
-                // temporarily set to blue while we figure out details of `DonationClass`
-                donationMessage.donationClass = DonationClass.Blue;
+                donationMessage.donationAmount = parseFloat(
+                    message.currencyString.replaceAll(/[^0-9,\.]/, '').replaceAll(',', '.'),
+                );
+                donationMessage.donationCurrency = getCurrencyCodeFromString(message.currencyString);
+                donationMessage.donationClass = CLASS_LOOKUP[message.backgroundColor];
                 break;
             }
         }
@@ -109,8 +130,7 @@ export class YouTubeDonationProvider implements DonationProvider {
         return donationMessage as DonationMessage;
     }
 
-    configure(cb: ConfigurationBuilder): void {
-    }
+    configure(cb: ConfigurationBuilder): void {}
 }
 
 export class YouTubeConfig extends SavedConfig {

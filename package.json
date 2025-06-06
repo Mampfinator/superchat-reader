@@ -1,6 +1,6 @@
 {
     "dependencies": {
-        "@sireatsalot/youtube.js": "^0.0.5",
+        "@sireatsalot/youtube.js": "0.0.5",
         "currency-codes": "^2.2.0",
         "neverthrow": "^6.2.2"
     }

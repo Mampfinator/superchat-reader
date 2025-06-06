@@ -100,7 +100,7 @@ export class YouTubeDonationProvider implements DonationProvider {
                 donationMessage.messageType = 'text';
 
                 donationMessage.donationAmount = parseFloat(
-                    message.currencyString.replaceAll(/[^0-9,\.]/, '').replaceAll(',', '.'),
+                    message.currencyString.replaceAll(/[^0-9,\.]/g, '').replaceAll(',', ''),
                 );
 
                 const currencyCode = getCurrencyCodeFromString(message.currencyString);
